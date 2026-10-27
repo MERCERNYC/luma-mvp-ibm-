@@ -1,35 +1,42 @@
-import { Sidebar } from "@/components/layout/Sidebar";
+import { Header } from "@/components/layout/Header";
 
 /* ─────────────────────────────────────────────
-   AppShell
-   3-column layout: sidebar | main | right panel.
-   Right panel is passed as a prop so the page
-   controls what goes there.
+   AppShell — v2
+   Layout: header on top, then side-by-side
+   left content + right email pane.
    ───────────────────────────────────────────── */
 
 interface AppShellProps {
   children: React.ReactNode;
-  rightPanel?: React.ReactNode;
+  emailPane?: React.ReactNode;
 }
 
-export function AppShell({ children, rightPanel }: AppShellProps) {
+export function AppShell({ children, emailPane }: AppShellProps) {
   return (
-    <div className="flex min-h-dvh gap-4 p-4 items-start">
-      <Sidebar />
+    <div className="flex flex-col min-h-dvh">
+      <Header />
 
-      <main
-        className="flex-1 min-w-0 py-5 px-4"
-        id="main-content"
-        tabIndex={-1}
-      >
-        {children}
-      </main>
+      <div className="flex flex-1 gap-0 overflow-hidden">
+        {/* Left — main content */}
+        <main
+          className="flex-1 min-w-0 px-10 py-8 overflow-y-auto"
+          id="main-content"
+          tabIndex={-1}
+        >
+          {children}
+        </main>
 
-      {rightPanel && (
-        <div className="py-5 pr-2">
-          {rightPanel}
-        </div>
-      )}
+        {/* Right — email reading pane */}
+        {emailPane && (
+          <aside
+            className="w-[520px] shrink-0 overflow-y-auto glass-raised"
+            style={{ borderLeft: "1px solid var(--luma-glass-border)" }}
+            aria-label="Email reading pane"
+          >
+            {emailPane}
+          </aside>
+        )}
+      </div>
     </div>
   );
 }
