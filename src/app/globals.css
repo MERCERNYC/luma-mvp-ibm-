@@ -1,26 +1,222 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ═══════════════════════════════════════════════
+   LUMA Design System — v0.4
+   Visual direction: bright baby-blue atmosphere,
+   translucent white glass surfaces, navy text.
+   Neurodivergent-first: low noise, clear hierarchy.
+   ═══════════════════════════════════════════════ */
 
+/* ─────────────────────────────────────────────
+   @theme — Tailwind v4 token registration
+   All CSS custom properties here become
+   Tailwind utility-class values.
+   ───────────────────────────────────────────── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Fonts */
+  --font-sans: "TT Commons", var(--font-geist-sans), ui-sans-serif, system-ui,
+    -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* ── Environment ────────────────────────────
+     The background is never flat — it is always
+     the gradient defined in :root below.
+     --color-background is the solid fallback.
+  ──────────────────────────────────────────── */
+  --color-background:       var(--luma-bg);
+
+  /* ── Glass surfaces ──────────────────────── */
+  --color-glass:            var(--luma-glass);
+  --color-glass-raised:     var(--luma-glass-raised);
+  --color-glass-border:     var(--luma-glass-border);
+
+  /* ── Text ────────────────────────────────── */
+  --color-text-primary:     var(--luma-text-primary);
+  --color-text-secondary:   var(--luma-text-secondary);
+  --color-text-tertiary:    var(--luma-text-tertiary);
+  --color-text-disabled:    var(--luma-text-disabled);
+  --color-text-inverse:     var(--luma-text-inverse);
+
+  /* ── Brand colors ────────────────────────── */
+  --color-blue:             var(--luma-blue);
+  --color-blue-soft:        var(--luma-blue-soft);
+  --color-purple:           var(--luma-purple);
+  --color-purple-soft:      var(--luma-purple-soft);
+
+  /* ── Semantic / email priority ──────────── */
+  --color-urgent:           var(--luma-urgent);
+  --color-urgent-soft:      var(--luma-urgent-soft);
+  --color-action:           var(--luma-action);
+  --color-action-soft:      var(--luma-action-soft);
+  --color-later:            var(--luma-later);
+  --color-later-soft:       var(--luma-later-soft);
+  --color-news:             var(--luma-news);
+  --color-news-soft:        var(--luma-news-soft);
+
+  /* ── Border radius ───────────────────────── */
+  --radius-xs:   4px;
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-xl:   22px;
+  --radius-2xl:  28px;
+  --radius-full: 9999px;
+
+  /* ── Spacing ─────────────────────────────── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ── Typography scale ────────────────────── */
+  --text-2xs:  0.6875rem;   /* 11px — labels only */
+  --text-xs:   0.75rem;     /* 12px */
+  --text-sm:   0.8125rem;   /* 13px */
+  --text-base: 0.9375rem;   /* 15px — body default */
+  --text-md:   1rem;        /* 16px */
+  --text-lg:   1.125rem;    /* 18px */
+  --text-xl:   1.375rem;    /* 22px */
+  --text-2xl:  1.75rem;     /* 28px */
+  --text-3xl:  2.25rem;     /* 36px */
+
+  --leading-tight:   1.2;
+  --leading-snug:    1.35;
+  --leading-normal:  1.5;
+  --leading-relaxed: 1.65;
+
+  --tracking-tight:  -0.02em;
+  --tracking-snug:   -0.01em;
+  --tracking-normal: 0em;
+  --tracking-wide:   0.02em;
+  --tracking-wider:  0.06em;
+
+  /* ── Glass shadows ───────────────────────── */
+  --shadow-glass-xs: 0 1px 2px 0 rgba(100, 140, 200, 0.06);
+  --shadow-glass-sm: 0 2px 8px 0 rgba(80, 120, 200, 0.08),
+                     0 1px 2px 0 rgba(80, 120, 200, 0.04);
+  --shadow-glass-md: 0 4px 16px 0 rgba(60, 100, 180, 0.10),
+                     0 2px 4px 0 rgba(60, 100, 180, 0.06);
+  --shadow-glass-lg: 0 8px 32px 0 rgba(50, 90, 170, 0.12),
+                     0 4px 8px 0 rgba(50, 90, 170, 0.07);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ─────────────────────────────────────────────
+   :root — concrete light-mode values
+   ───────────────────────────────────────────── */
+:root {
+  /* Background (gradient applied on body) */
+  --luma-bg: #ddeeff;
+  --luma-bg-gradient:
+    radial-gradient(ellipse 140% 80% at 20% -10%, #cce8ff 0%, transparent 60%),
+    radial-gradient(ellipse 100% 60% at 80% 110%,  #d6e8ff 0%, transparent 55%),
+    linear-gradient(160deg, #e8f4ff 0%, #ddeeff 40%, #e4edff 100%);
+
+  /* Glass surfaces
+     — semi-transparent white, never opaque
+     — blur is applied via CSS class, not here */
+  --luma-glass:         rgba(255, 255, 255, 0.62);
+  --luma-glass-raised:  rgba(255, 255, 255, 0.80);
+  --luma-glass-border:  rgba(180, 210, 255, 0.45);
+
+  /* Text — navy for maximum contrast on blue bg
+     All meet WCAG AA on the glass surface */
+  --luma-text-primary:   #0f1c2e;   /* ~#0f1c2e on white: 14.5:1 ✓ */
+  --luma-text-secondary: #2c4263;   /* 7.2:1 ✓ */
+  --luma-text-tertiary:  #5470a0;   /* 4.6:1 ✓ (AA large / UI) */
+  --luma-text-disabled:  #94aac8;   /* decorative only */
+  --luma-text-inverse:   #ffffff;
+
+  /* Brand */
+  --luma-blue:         #2563eb;   /* primary action blue */
+  --luma-blue-soft:    rgba(37, 99, 235, 0.10);
+  --luma-purple:       #7c3aed;   /* secondary accent, use sparingly */
+  --luma-purple-soft:  rgba(124, 58, 237, 0.10);
+
+  /* Email priority semantic colors
+     — always paired with an icon or label (not color alone) */
+  --luma-urgent:       #dc2626;   /* red   — needs response today */
+  --luma-urgent-soft:  rgba(220, 38, 38, 0.09);
+  --luma-action:       #2563eb;   /* blue  — needs action */
+  --luma-action-soft:  rgba(37, 99, 235, 0.09);
+  --luma-later:        #16a34a;   /* green — can wait */
+  --luma-later-soft:   rgba(22, 163, 74, 0.09);
+  --luma-news:         #7c3aed;   /* purple — FYI / newsletter */
+  --luma-news-soft:    rgba(124, 58, 237, 0.09);
+}
+
+/* ─────────────────────────────────────────────
+   Base reset & global styles
+   ───────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--luma-bg);
+  background-image: var(--luma-bg-gradient);
+  background-attachment: fixed;
+  color: var(--luma-text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  min-height: 100dvh;
+  margin: 0;
+}
+
+/* ─────────────────────────────────────────────
+   Glass utility class
+   Used by Card[variant="glass"] and any surface
+   that needs the frosted-glass treatment.
+   Never reduce text readability — use on
+   containers only, not on text itself.
+   ───────────────────────────────────────────── */
+.glass {
+  background: var(--luma-glass);
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  border: 1px solid var(--luma-glass-border);
+  box-shadow: var(--shadow-glass-sm);
+}
+
+.glass-raised {
+  background: var(--luma-glass-raised);
+  backdrop-filter: blur(32px) saturate(1.6);
+  -webkit-backdrop-filter: blur(32px) saturate(1.6);
+  border: 1px solid var(--luma-glass-border);
+  box-shadow: var(--shadow-glass-md);
+}
+
+/* ─────────────────────────────────────────────
+   Focus ring — keyboard only, never mouse
+   ───────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--luma-blue);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ─────────────────────────────────────────────
+   Scrollbar — thin, matches glass palette
+   ───────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 150, 220, 0.25);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 150, 220, 0.45);
 }
