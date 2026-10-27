@@ -220,3 +220,77 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(100, 150, 220, 0.45);
 }
+
+/* ─────────────────────────────────────────────
+   prefers-reduced-motion
+   ───────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─────────────────────────────────────────────
+   prefers-contrast: more
+   ───────────────────────────────────────────── */
+@media (prefers-contrast: more) {
+  :root {
+    --luma-glass-border: rgba(100, 140, 200, 0.80);
+    --luma-text-tertiary: #2c4263;
+    --luma-text-disabled: #5470a0;
+  }
+  .glass, .glass-raised {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(255, 255, 255, 0.95);
+  }
+}
+
+/* ─────────────────────────────────────────────
+   Skeleton pulse — stops with reduced-motion
+   ───────────────────────────────────────────── */
+@keyframes luma-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+.skeleton {
+  background: rgba(180, 210, 255, 0.40);
+  border-radius: var(--radius-sm);
+  animation: luma-pulse 1.6s ease-in-out infinite;
+}
+
+/* ─────────────────────────────────────────────
+   Toggle switch
+   ───────────────────────────────────────────── */
+.luma-toggle-track {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 36px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  background: rgba(100, 140, 200, 0.25);
+  border: 1px solid var(--luma-glass-border);
+  cursor: pointer;
+  transition: background 150ms;
+}
+.luma-toggle-track[data-checked="true"] {
+  background: var(--luma-blue);
+  border-color: var(--luma-blue);
+}
+.luma-toggle-thumb {
+  position: absolute;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+  transition: transform 150ms;
+}
+.luma-toggle-track[data-checked="true"] .luma-toggle-thumb {
+  transform: translateX(16px);
+}

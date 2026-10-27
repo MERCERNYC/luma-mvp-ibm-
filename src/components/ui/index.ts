@@ -9,3 +9,6 @@ export type { CardProps, CardVariant } from "./Card";
 
 export { Divider } from "./Divider";
 export type { DividerProps } from "./Divider";
+
+export { SectionHeader } from "./SectionHeader";
+export type { SectionHeaderProps } from "./SectionHeader";
