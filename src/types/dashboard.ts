@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════
-   LUMA Dashboard types — v3
+   LUMA Dashboard types — v2
    Tag labels match the image: Action Needed /
    For Later / News & Updates
    ═══════════════════════════════════════════════ */
@@ -23,14 +23,6 @@ export interface EmailAttachment {
 export interface Task {
   id: string;
   priority: TaskPriority;
-  /** Whether the user has read this email */
-  isRead: boolean;
-  /**
-   * ISO-8601 date-time string for the email.
-   * Used for relative timestamps and future grouping.
-   * e.g. "2025-01-27T09:24:00"
-   */
-  date: string;
   /** Display name of sender */
   sender: string;
   /** Raw email address */
