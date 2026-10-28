@@ -75,15 +75,20 @@ function sortByPriority(
 
 export type ClassificationStatus = "loading" | "ready" | "error";
 
+/** urgencyScore keyed by task id — used by the page to drive pill labels. */
+export type UrgencyMap = Record<string, number>;
+
 export interface UseClassifiedEmailsResult {
-  status:    ClassificationStatus;
-  tasks:     Task[];
-  briefText: string;
+  status:     ClassificationStatus;
+  tasks:      Task[];
+  urgencies:  UrgencyMap;
+  briefText:  string;
 }
 
 export function useClassifiedEmails(): UseClassifiedEmailsResult {
   const [status,    setStatus]    = useState<ClassificationStatus>("loading");
   const [tasks,     setTasks]     = useState<Task[]>([]);
+  const [urgencies, setUrgencies] = useState<UrgencyMap>({});
   const [briefText, setBriefText] = useState("");
 
   useEffect(() => {
@@ -129,6 +134,12 @@ export function useClassifiedEmails(): UseClassifiedEmailsResult {
         //    Overdue/expired items (urgencyScore 0.4) sink below live deadlines.
         const classifiedTasks = sortByPriority(mergedTasks, results);
 
+        // Build urgencyScore lookup keyed by task id (preserves score after sort).
+        const urgencyMap: UrgencyMap = {};
+        INBOX.forEach((task, i) => {
+          urgencyMap[task.id] = results[i].urgencyScore;
+        });
+
         // 4. Generate the daily brief via the API route.
         const briefResponse = await fetch("/api/agent/daily-brief", {
           method:  "POST",
@@ -150,6 +161,7 @@ export function useClassifiedEmails(): UseClassifiedEmailsResult {
         if (cancelled) return;
 
         setTasks(classifiedTasks);
+        setUrgencies(urgencyMap);
         setBriefText(text);
         setStatus("ready");
       } catch {
@@ -161,5 +173,5 @@ export function useClassifiedEmails(): UseClassifiedEmailsResult {
     return () => { cancelled = true; };
   }, []); // runs once on mount
 
-  return { status, tasks, briefText };
+  return { status, tasks, urgencies, briefText };
 }

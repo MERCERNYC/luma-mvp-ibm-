@@ -16,23 +16,31 @@ import type { Task, TaskPriority } from "@/types/dashboard";
    The entire row is the tap target — no buttons.
    ───────────────────────────────────────────── */
 
-const TAG_CONFIG: Record<TaskPriority, { label: string; color: string; bg: string }> = {
-  "action-needed": {
-    label: "Action Needed",
-    color: "var(--luma-action)",
-    bg:    "var(--luma-action-soft)",
-  },
-  "for-later": {
-    label: "For Later",
-    color: "var(--luma-later)",
-    bg:    "var(--luma-later-soft)",
-  },
-  "news-updates": {
-    label: "News & Updates",
-    color: "var(--luma-news)",
-    bg:    "var(--luma-news-soft)",
-  },
-};
+// urgencyScore threshold above which action-needed emails get the URGENT label
+const URGENT_THRESHOLD = 0.9;
+
+/**
+ * Derive the pill label from priority + urgencyScore.
+ *   action-needed + score ≥ 0.9  → URGENT  (red)
+ *   action-needed + score < 0.9  → ACTION  (purple)
+ *   for-later                    → LATER   (amber)
+ *   news-updates                 → NEWS    (grey)
+ */
+export function getPillConfig(
+  priority:     TaskPriority,
+  urgencyScore?: number,
+): { label: string; color: string; bg: string } {
+  if (priority === "action-needed") {
+    const score = urgencyScore ?? 0;
+    return score >= URGENT_THRESHOLD
+      ? { label: "Urgent",  color: "#dc2626", bg: "rgba(220,38,38,0.10)" }
+      : { label: "Action",  color: "var(--luma-action)", bg: "var(--luma-action-soft)" };
+  }
+  if (priority === "for-later") {
+    return { label: "Later", color: "#b45309", bg: "rgba(245,158,11,0.12)" };
+  }
+  return { label: "News", color: "var(--luma-text-tertiary)", bg: "rgba(100,116,139,0.10)" };
+}
 
 const AVATAR_BG: Record<Task["avatarColor"], string> = {
   blue:   "rgba(37,99,235,0.12)",
@@ -49,13 +57,14 @@ const AVATAR_COLOR: Record<Task["avatarColor"], string> = {
 };
 
 export interface EmailRowProps {
-  task: Task;
-  isSelected: boolean;
-  onSelect: (task: Task) => void;
+  task:         Task;
+  urgencyScore?: number;
+  isSelected:   boolean;
+  onSelect:     (task: Task) => void;
 }
 
-export function EmailRow({ task, isSelected, onSelect }: EmailRowProps) {
-  const tag = TAG_CONFIG[task.priority];
+export function EmailRow({ task, urgencyScore, isSelected, onSelect }: EmailRowProps) {
+  const tag = getPillConfig(task.priority, urgencyScore);
 
   return (
     <button

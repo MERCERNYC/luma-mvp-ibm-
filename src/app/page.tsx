@@ -1,34 +1,22 @@
 "use client";
 
-import { useState }        from "react";
-import { Sparkles }        from "lucide-react";
-import { AppShell }        from "@/components/layout/AppShell";
-import { EmailRow }        from "@/components/email/EmailRow";
-import { EmailPane }       from "@/components/email/EmailPane";
-import { DailyBrief }      from "@/components/email/DailyBrief";
-import { GREETING_NAME }   from "@/data/dashboard";
+import { useState }    from "react";
+import { Target }      from "lucide-react";
+import { AppShell }    from "@/components/layout/AppShell";
+import { EmailRow }    from "@/components/email/EmailRow";
+import { EmailPane }   from "@/components/email/EmailPane";
+import { GREETING_NAME } from "@/data/dashboard";
 import { useClassifiedEmails, FOCUS_LIMIT } from "@/hooks/useClassifiedEmails";
-import type { Task }       from "@/types/dashboard";
+import type { Task }   from "@/types/dashboard";
 
 /* ─────────────────────────────────────────────
    Dashboard — LUMA home
-   "use client" — selected email + classification
-   state lives here.
 
-   Data flow
-   ─────────
-   useClassifiedEmails()
-     → calls agent.classifyEmail() for each DEMO_TASKS item
-     → calls agent.generateDailyBrief() once classification done
-     → returns { status, tasks, briefText }
-
-   While status === "loading":
-     — skeleton rows replace the email list
-     — brief shows a placeholder string
-
-   When status === "ready":
-     — tasks[] has agent-assigned priorities
-     — briefText is the agent-generated sentence
+   Layout
+   ──────
+   1. Greeting + subtitle
+   2. "Focus Now" card — top 5 sorted emails, See all toggle
+   3. Three summary tiles — Action Needed / For Later / News & Updates
    ───────────────────────────────────────────── */
 
 function SkeletonRow() {
@@ -47,16 +35,62 @@ function SkeletonRow() {
   );
 }
 
+interface SummaryCardProps {
+  icon:        React.ReactNode;
+  label:       string;
+  count:       number;
+  description: string;
+  accent:      string;
+  accentBg:    string;
+}
+
+function SummaryCard({ icon, label, count, description, accent, accentBg }: SummaryCardProps) {
+  return (
+    <div
+      className="flex-1 rounded-[var(--radius-2xl)] px-5 py-4 flex items-center gap-4"
+      style={{ background: accentBg, border: "1px solid var(--luma-glass-border)" }}
+    >
+      <div
+        className="shrink-0 w-10 h-10 rounded-[var(--radius-xl)] flex items-center justify-center"
+        style={{ background: accent + "22" }}
+      >
+        <span style={{ color: accent }}>{icon}</span>
+      </div>
+      <div className="min-w-0">
+        <p className="text-[var(--text-xs)] font-medium" style={{ color: "var(--luma-text-secondary)" }}>
+          {label}
+        </p>
+        <p className="text-[2rem] font-bold leading-none mt-0.5" style={{ color: "var(--luma-text-primary)" }}>
+          {count}
+        </p>
+        <p className="text-[var(--text-xs)] mt-0.5" style={{ color: "var(--luma-text-tertiary)" }}>
+          {description}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
-  const { status, tasks, briefText } = useClassifiedEmails();
+  const { status, tasks, urgencies, briefText } = useClassifiedEmails();
 
   const [showAll,  setShowAll]  = useState(false);
   const [selected, setSelected] = useState<Task | null>(null);
 
   const actionCount  = tasks.filter((t) => t.priority === "action-needed").length;
+  const laterCount   = tasks.filter((t) => t.priority === "for-later").length;
+  const newsCount    = tasks.filter((t) => t.priority === "news-updates").length;
+
   const visibleTasks = showAll ? tasks : tasks.slice(0, FOCUS_LIMIT);
   const defaultTask  = visibleTasks[0];
   const activeTask   = selected ?? defaultTask ?? null;
+
+  // Subtitle varies by loading state
+  const subtitle = status === "loading"
+    ? "Checking your inbox…"
+    : status === "error"
+      ? "Couldn't load emails right now."
+      : briefText || "What needs your attention today?";
 
   return (
     <AppShell
@@ -66,8 +100,8 @@ export default function DashboardPage() {
           : null
       }
     >
-      {/* Greeting */}
-      <div className="mb-8">
+      {/* ── Greeting ─────────────────────────────── */}
+      <div className="mb-6">
         <h1
           className="text-[var(--text-3xl)] font-bold tracking-[var(--tracking-tight)]"
           style={{ color: "var(--luma-text-primary)" }}
@@ -75,65 +109,53 @@ export default function DashboardPage() {
           Good morning, {GREETING_NAME}! ☀️
         </h1>
         <p
-          className="mt-2 text-[var(--text-lg)]"
+          className="mt-1 text-[var(--text-base)]"
           style={{ color: "var(--luma-text-secondary)" }}
         >
-          {status === "loading"
-            ? "Checking your inbox…"
-            : status === "error"
-              ? "Couldn't load emails right now."
-              : `You have ${actionCount} important email${actionCount !== 1 ? "s" : ""} today.`}
+          {subtitle}
         </p>
       </div>
 
-      {/* Daily brief */}
-      <DailyBrief
-        text={
-          status === "loading"
-            ? "Summarising your inbox…"
-            : status === "error"
-              ? "Unable to generate a summary."
-              : briefText
-        }
-      />
-
-      {/* Focus list */}
-      <div className="mt-8">
-        <div className="flex items-center justify-between mb-4">
+      {/* ── Focus Now card ───────────────────────── */}
+      <div
+        className="glass rounded-[var(--radius-2xl)] overflow-hidden"
+        style={{ border: "1px solid var(--luma-glass-border)" }}
+      >
+        {/* Card header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-3">
           <div className="flex items-center gap-2">
-            <Sparkles size={16} strokeWidth={1.5} style={{ color: "var(--luma-blue)" }} aria-hidden="true" />
+            <Target size={18} strokeWidth={1.5} style={{ color: "var(--luma-blue)" }} aria-hidden="true" />
             <h2
               className="text-[var(--text-base)] font-bold"
               style={{ color: "var(--luma-text-primary)" }}
             >
-              {status === "loading"
-                ? "Loading emails…"
-                : showAll
-                  ? `All ${tasks.length} Emails`
-                  : `Top ${Math.min(FOCUS_LIMIT, tasks.length)} of ${tasks.length}`}
+              Focus Now
             </h2>
           </div>
+
           {status === "ready" && tasks.length > FOCUS_LIMIT && (
             <button
               onClick={() => setShowAll((v) => !v)}
-              className="text-[var(--text-sm)]"
+              className="text-[var(--text-sm)] font-medium flex items-center gap-1"
               style={{ color: "var(--luma-blue)" }}
             >
-              {showAll ? "Show less" : `Show all ${tasks.length}`}
+              {showAll
+                ? "Show less"
+                : `See all (${tasks.length}) →`}
             </button>
           )}
         </div>
 
+        {/* Email rows */}
         <div
-          className="glass rounded-[var(--radius-2xl)] overflow-hidden"
-          style={{ border: "1px solid var(--luma-glass-border)" }}
           role="list"
-          aria-label="Inbox emails"
+          aria-label="Focus Now emails"
           aria-busy={status === "loading"}
         >
           {status === "loading" ? (
-            /* Skeleton — 3 placeholder rows while agent classifies */
             <>
+              <SkeletonRow />
+              <SkeletonRow />
               <SkeletonRow />
               <SkeletonRow />
               <SkeletonRow />
@@ -150,6 +172,7 @@ export default function DashboardPage() {
               <div key={task.id} role="listitem">
                 <EmailRow
                   task={task}
+                  urgencyScore={urgencies[task.id]}
                   isSelected={(selected ?? defaultTask)?.id === task.id}
                   onSelect={setSelected}
                 />
@@ -159,9 +182,37 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* ── Summary tiles ────────────────────────── */}
+      <div className="flex gap-3 mt-4">
+        <SummaryCard
+          icon={<span style={{ fontSize: 18 }}>✉️</span>}
+          label="Action Needed"
+          count={status === "ready" ? actionCount : 0}
+          description="Requires a reply or decision"
+          accent="#dc2626"
+          accentBg="rgba(220,38,38,0.04)"
+        />
+        <SummaryCard
+          icon={<span style={{ fontSize: 18 }}>🕐</span>}
+          label="For Later"
+          count={status === "ready" ? laterCount : 0}
+          description="Keep on your radar"
+          accent="#b45309"
+          accentBg="rgba(245,158,11,0.06)"
+        />
+        <SummaryCard
+          icon={<span style={{ fontSize: 18 }}>📰</span>}
+          label="News & Updates"
+          count={status === "ready" ? newsCount : 0}
+          description="FYI and newsletters"
+          accent="var(--luma-blue)"
+          accentBg="rgba(37,99,235,0.04)"
+        />
+      </div>
+
       {/* Footer */}
       <p
-        className="mt-6 text-[var(--text-xs)]"
+        className="mt-5 text-[var(--text-xs)]"
         style={{ color: "var(--luma-text-tertiary)" }}
       >
         {status === "ready"
