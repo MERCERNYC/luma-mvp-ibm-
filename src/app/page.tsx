@@ -7,7 +7,7 @@ import { EmailRow }        from "@/components/email/EmailRow";
 import { EmailPane }       from "@/components/email/EmailPane";
 import { DailyBrief }      from "@/components/email/DailyBrief";
 import { GREETING_NAME }   from "@/data/dashboard";
-import { useClassifiedEmails } from "@/hooks/useClassifiedEmails";
+import { useClassifiedEmails, FOCUS_LIMIT } from "@/hooks/useClassifiedEmails";
 import type { Task }       from "@/types/dashboard";
 
 /* ─────────────────────────────────────────────
@@ -50,10 +50,13 @@ function SkeletonRow() {
 export default function DashboardPage() {
   const { status, tasks, briefText } = useClassifiedEmails();
 
-  const actionCount = tasks.filter((t) => t.priority === "action-needed").length;
-  const defaultTask = tasks[0];
+  const [showAll,  setShowAll]  = useState(false);
   const [selected, setSelected] = useState<Task | null>(null);
-  const activeTask = selected ?? defaultTask ?? null;
+
+  const actionCount  = tasks.filter((t) => t.priority === "action-needed").length;
+  const visibleTasks = showAll ? tasks : tasks.slice(0, FOCUS_LIMIT);
+  const defaultTask  = visibleTasks[0];
+  const activeTask   = selected ?? defaultTask ?? null;
 
   return (
     <AppShell
@@ -96,14 +99,29 @@ export default function DashboardPage() {
 
       {/* Focus list */}
       <div className="mt-8">
-        <div className="flex items-center gap-2 mb-4">
-          <Sparkles size={16} strokeWidth={1.5} style={{ color: "var(--luma-blue)" }} aria-hidden="true" />
-          <h2
-            className="text-[var(--text-base)] font-bold"
-            style={{ color: "var(--luma-text-primary)" }}
-          >
-            {status === "loading" ? "Loading emails…" : `${tasks.length} Emails`}
-          </h2>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Sparkles size={16} strokeWidth={1.5} style={{ color: "var(--luma-blue)" }} aria-hidden="true" />
+            <h2
+              className="text-[var(--text-base)] font-bold"
+              style={{ color: "var(--luma-text-primary)" }}
+            >
+              {status === "loading"
+                ? "Loading emails…"
+                : showAll
+                  ? `All ${tasks.length} Emails`
+                  : `Top ${Math.min(FOCUS_LIMIT, tasks.length)} of ${tasks.length}`}
+            </h2>
+          </div>
+          {status === "ready" && tasks.length > FOCUS_LIMIT && (
+            <button
+              onClick={() => setShowAll((v) => !v)}
+              className="text-[var(--text-sm)]"
+              style={{ color: "var(--luma-blue)" }}
+            >
+              {showAll ? "Show less" : `Show all ${tasks.length}`}
+            </button>
+          )}
         </div>
 
         <div
@@ -128,7 +146,7 @@ export default function DashboardPage() {
               Something went wrong. Please refresh the page.
             </p>
           ) : (
-            tasks.map((task) => (
+            visibleTasks.map((task) => (
               <div key={task.id} role="listitem">
                 <EmailRow
                   task={task}
@@ -147,8 +165,8 @@ export default function DashboardPage() {
         style={{ color: "var(--luma-text-tertiary)" }}
       >
         {status === "ready"
-          ? "Priorities set by MockAgent · Sample emails"
-          : "Priorities are editable · Sample emails"}
+          ? "Sorted by urgency · action-needed → for-later → news-updates · Sample emails"
+          : "Sorting by urgency · Sample emails"}
       </p>
     </AppShell>
   );

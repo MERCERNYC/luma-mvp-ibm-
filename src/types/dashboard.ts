@@ -39,5 +39,10 @@ export interface Task {
   body: string;
   /** Displayed time string e.g. "9:24 AM" */
   time: string;
+  /**
+   * Unix epoch milliseconds when the email was received.
+   * Used for sort-order tiebreaking — most recent first within a bucket.
+   */
+  receivedAt: number;
   attachment?: EmailAttachment;
 }

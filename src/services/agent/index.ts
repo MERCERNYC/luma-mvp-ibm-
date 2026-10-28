@@ -1,29 +1,40 @@
 /* ═══════════════════════════════════════════════════════════════
    Agent service — public API
    ───────────────────────────────────────────────────────────────
-   Import from here, never from MockAgent or types directly.
+   SERVER-ONLY.  Import from here in API routes; never in components
+   or client-side hooks.
 
-   To swap in the real watsonx agent:
+   Public surface
+   ──────────────
+   agentService   — singleton entry point used by API routes
+   AgentService   — class (for tests / custom instantiation)
+   IAgent + all input/output types — for type-checking route handlers
+
+   To swap in the real watsonx provider:
      1. Create  src/services/agent/WatsonxAgent.ts  implementing IAgent
-     2. Replace the `agent` export below with a WatsonxAgent instance
-     3. No changes required anywhere else in the codebase
+     2. Set  AGENT_PROVIDER=watsonx  in .env.local
+     3. Add the branch in AgentService.resolveProvider()
+     4. No changes required anywhere else in the codebase
    ═══════════════════════════════════════════════════════════════ */
+
+import "server-only";
 
 export type {
   IAgent,
+  EmailType,
   ClassifyInput,
   ClassifyResult,
   DailyBriefInput,
   DailyBriefResult,
 } from "./types";
 
-export { MockAgent } from "./MockAgent";
+export { MockAgent }    from "./MockAgent";
+export { AgentService } from "./AgentService";
 
-import { MockAgent } from "./MockAgent";
+import { AgentService } from "./AgentService";
 
 /**
- * The active agent singleton used by all components.
- * Currently: MockAgent (deterministic, no network calls).
- * Replace with: `new WatsonxAgent(config)` when ready.
+ * The active AgentService singleton used by all API routes.
+ * Provider is selected by the AGENT_PROVIDER env var (default: "mock").
  */
-export const agent: import("./types").IAgent = new MockAgent();
+export const agentService = new AgentService();

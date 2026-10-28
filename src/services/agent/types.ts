@@ -8,6 +8,23 @@
 
 import type { Task, TaskPriority } from "@/types/dashboard";
 
+// ─── Email type ──────────────────────────────────────────────────
+
+/**
+ * Semantic category of the email, independent of priority.
+ *
+ * communication   — person-to-person or organisation-to-person requiring
+ *                   awareness or a reply (school, employer, government).
+ * notification    — automated status update (shipment, receipt, sign-in).
+ * promotion       — marketing, offers, rewards, recommendations.
+ * potential_spam  — suspicious, unsolicited, or deceptive content.
+ */
+export type EmailType =
+  | "communication"
+  | "notification"
+  | "promotion"
+  | "potential_spam";
+
 // ─── Classification ──────────────────────────────────────────────
 
 /**
@@ -15,21 +32,42 @@ import type { Task, TaskPriority } from "@/types/dashboard";
  * decide which priority bucket an email belongs in.
  */
 export interface ClassifyInput {
-  subject: string;
-  preview: string;
-  body: string;
-  sender: string;
+  subject:     string;
+  preview:     string;
+  body:        string;
+  /** Display name, e.g. "Dani (Teacher)" */
+  sender:      string;
+  /** Raw address, e.g. "dani@lincolnelem.edu" */
+  senderEmail: string;
 }
 
 /**
  * Output of a single classify call.
- * `confidence` is 0–1; `reasoning` is a short human-readable note
- * explaining the decision (shown in dev/debug mode; hidden in prod).
+ *
+ * `priority`          — bucket used by the dashboard (maps to TaskPriority).
+ * `emailType`         — semantic category of the email.
+ * `requiresAction`    — whether the user must do something.
+ * `reason`            — short human-readable explanation (shown in the UI as
+ *                       "Why LUMA surfaced this").
+ * `recommendedAction` — one clear next step, or null when none is needed.
+ * `confidence`        — 0–1; high ≥ 0.85, medium 0.60–0.84, low < 0.60.
+ * `urgencyScore`      — 0–1 within-bucket sort key.
+ *                       1.0 = immediate/fraud  0.9 = today/tomorrow
+ *                       0.85 = this week       0.75 = within 10 days
+ *                       0.6  = within 30 days  0.5  = no deadline
+ *                       0.4  = overdue but no longer actionable (suppressed)
+ *                       for-later always 0.5, news-updates always 0.3.
+ * `reasoning`         — internal dev/debug note (not shown in production UI).
  */
 export interface ClassifyResult {
-  priority: TaskPriority;
-  confidence: number;
-  reasoning: string;
+  priority:          TaskPriority;
+  emailType:         EmailType;
+  requiresAction:    boolean;
+  reason:            string;
+  recommendedAction: string | null;
+  confidence:        number;
+  urgencyScore:      number;
+  reasoning:         string;
 }
 
 // ─── Daily Brief ─────────────────────────────────────────────────

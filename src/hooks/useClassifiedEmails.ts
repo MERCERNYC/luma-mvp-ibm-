@@ -3,31 +3,71 @@
 /* ═══════════════════════════════════════════════════════════════
    useClassifiedEmails
    ───────────────────────────────────────────────────────────────
-   Runs agent.classifyEmail() on every email in the inbox at mount.
-   Also runs agent.generateDailyBrief() once all classifications
-   are known.
+   Drives the classification pipeline by calling the server-side
+   API routes — never imports from services/agent directly.
+
+   Data flow
+   ─────────
+   1. POST /api/agent/classify   { emails: ClassifyInput[] }
+        → ClassifyResult[] (priority per email)
+   2. POST /api/agent/daily-brief { emails[], userName }
+        → { text: string }
 
    Returns
    ───────
    status     "loading" | "ready" | "error"
-   tasks      Task[]  — same shape EmailRow/EmailPane already expect,
-              with `priority` set by the agent (not the hard-coded
-              fixture value).  Empty while loading.
-   briefText  string  — agent-generated daily brief sentence.
-              Empty string while loading.
+   tasks      Task[]  — agent-assigned priority; empty while loading
+   briefText  string  — agent-generated brief; empty while loading
 
    Swap story
    ──────────
-   The `agent` singleton is imported from @/services/agent.
-   When WatsonxAgent replaces MockAgent there, this hook changes
-   nothing — it will automatically use the real agent.
+   Switching providers (Mock → watsonx) requires no changes here.
+   Set AGENT_PROVIDER=watsonx in .env.local — the routes and
+   AgentService handle the rest.
    ═══════════════════════════════════════════════════════════════ */
 
-import { useEffect, useState } from "react";
-import { agent }               from "@/services/agent";
-import { toClassifyInput }     from "@/types/email";
-import { DEMO_TASKS, GREETING_NAME } from "@/data/dashboard";
-import type { Task }           from "@/types/dashboard";
+import { useEffect, useState }        from "react";
+import { toClassifyInput }            from "@/types/email";
+import { DEMO_TASKS, GREETING_NAME }  from "@/data/dashboard";
+import type { Task, TaskPriority }    from "@/types/dashboard";
+import type { ClassifyResult, DailyBriefResult } from "@/services/agent/types";
+
+// ─── Sort helpers ────────────────────────────────────────────────
+
+const PRIORITY_RANK: Record<TaskPriority, number> = {
+  "action-needed": 0,
+  "for-later":     1,
+  "news-updates":  2,
+};
+
+/** Number of top-priority emails shown on first load. */
+export const FOCUS_LIMIT = 5;
+
+/**
+ * Sort tasks by:
+ *   1. Priority bucket  (action-needed → for-later → news-updates)
+ *   2. urgencyScore desc within each bucket (live deadlines surface first;
+ *      overdue/expired items with score 0.4 sink to the bottom)
+ *   3. receivedAt desc as final tiebreaker (most recently received first)
+ */
+function sortByPriority(
+  tasks:   Task[],
+  results: ClassifyResult[],
+): Task[] {
+  return tasks
+    .map((task, i) => ({ task, result: results[i] }))
+    .sort((a, b) => {
+      const rankDiff =
+        PRIORITY_RANK[a.task.priority] - PRIORITY_RANK[b.task.priority];
+      if (rankDiff !== 0) return rankDiff;
+      // Same bucket — urgencyScore descending
+      const urgencyDiff = b.result.urgencyScore - a.result.urgencyScore;
+      if (urgencyDiff !== 0) return urgencyDiff;
+      // Same urgency — most recently received first
+      return b.task.receivedAt - a.task.receivedAt;
+    })
+    .map(({ task }) => task);
+}
 
 export type ClassificationStatus = "loading" | "ready" | "error";
 
@@ -47,10 +87,12 @@ export function useClassifiedEmails(): UseClassifiedEmailsResult {
 
     async function run() {
       try {
-        // 1. Classify every email in parallel.
-        const results = await Promise.all(
-          DEMO_TASKS.map((task) =>
-            agent.classifyEmail(
+        // 1. Classify all emails via the API route (server runs the agent).
+        const classifyResponse = await fetch("/api/agent/classify", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            emails: DEMO_TASKS.map((task) =>
               toClassifyInput({
                 id:          task.id,
                 sender:      task.sender,
@@ -59,29 +101,47 @@ export function useClassifiedEmails(): UseClassifiedEmailsResult {
                 preview:     task.preview,
                 body:        task.body,
                 time:        task.time,
+                receivedAt:  task.receivedAt,
                 attachment:  task.attachment,
               }),
-            ).then((r) => ({ task, priority: r.priority })),
-          ),
-        );
+            ),
+          }),
+        });
+
+        if (!classifyResponse.ok) throw new Error("classify request failed");
+
+        const { results }: { results: ClassifyResult[] } =
+          await classifyResponse.json();
 
         if (cancelled) return;
 
-        // 2. Merge agent priority back onto the Task objects.
-        const classifiedTasks: Task[] = results.map(({ task, priority }) => ({
+        // 2. Merge agent priorities back onto Task objects.
+        const mergedTasks: Task[] = DEMO_TASKS.map((task, i) => ({
           ...task,
-          priority,
+          priority: results[i].priority,
         }));
 
-        // 3. Generate the daily brief from the now-classified list.
-        const { text } = await agent.generateDailyBrief({
-          userName: GREETING_NAME,
-          emails: classifiedTasks.map((t) => ({
-            subject:  t.subject,
-            priority: t.priority,
-            sender:   t.sender,
-          })),
+        // 3. Sort: bucket rank → urgencyScore desc → receivedAt desc.
+        //    Overdue/expired items (urgencyScore 0.4) sink below live deadlines.
+        const classifiedTasks = sortByPriority(mergedTasks, results);
+
+        // 4. Generate the daily brief via the API route.
+        const briefResponse = await fetch("/api/agent/daily-brief", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userName: GREETING_NAME,
+            emails: classifiedTasks.map((t) => ({
+              subject:  t.subject,
+              priority: t.priority,
+              sender:   t.sender,
+            })),
+          }),
         });
+
+        if (!briefResponse.ok) throw new Error("daily-brief request failed");
+
+        const { text }: DailyBriefResult = await briefResponse.json();
 
         if (cancelled) return;
 

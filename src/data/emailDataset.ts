@@ -2,6 +2,9 @@ import type { Task } from "@/types/dashboard";
 
 /* ═══════════════════════════════════════════════════════════════════
    Session 08 — 50-Email Evaluation Dataset
+   receivedAt — Unix ms. Anchor: Nov 6 2024 09:00 AM PST = 1730912400000
+   Day offsets: today=0  yesterday=-1  Mon=-2  Sun=-3  Sat=-4
+                Fri=-5   Thu=-6        Wed=-7  Tue=-8
    ───────────────────────────────────────────────────────────────────
    Purpose
    -------
@@ -38,6 +41,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Hi Sofia, the permission form for the Science Museum trip must be…",
     body: "Hi Sofia,\n\nThe permission form for next Friday's Science Museum field trip must be returned by Wednesday. Without it, Maya cannot attend.\n\nPlease sign and return the attached PDF or fill it out online at the school portal.\n\nThank you,\nDani",
     time: "9:24 AM",
+    receivedAt: 1730913840000,
     attachment: { name: "Field_Trip_Permission.pdf", meta: "PDF · 248 KB" },
   },
   {
@@ -51,6 +55,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Please confirm or reschedule Maya's appointment by end of day today…",
     body: "Hi Sofia,\n\nThis is a reminder that Maya's annual checkup is scheduled for tomorrow, Tuesday, at 10:00 AM.\n\nPlease reply to confirm or call (555) 302-1100 to reschedule.\n\nDr. Patel's Office",
     time: "8:05 AM",
+    receivedAt: 1730909100000,
   },
   {
     id: "eval-003",
@@ -63,6 +68,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Your rent payment for this month has not been received. A late fee…",
     body: "Hi Sofia,\n\nYour rent payment for November was due on the 1st and has not been received. A late fee of $75 will be applied after the 5th.\n\nPlease log in to the tenant portal to make a payment or contact our office if there is an issue.\n\nOak Street Management",
     time: "7:48 AM",
+    receivedAt: 1730908080000,
   },
   {
     id: "eval-004",
@@ -75,6 +81,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Open enrollment for 2025 benefits closes this Friday at 5 PM. You…",
     body: "Hi Sofia,\n\nOpen enrollment for your 2025 benefits closes this Friday at 5:00 PM. If you do not make selections, you will be auto-enrolled in the same plan as last year.\n\nLog in to the benefits portal to review your options and confirm your choices.\n\nHR Team · Meridian Health",
     time: "6:52 AM",
+    receivedAt: 1730904720000,
     attachment: { name: "2025_Benefits_Guide.pdf", meta: "PDF · 1.2 MB" },
   },
   {
@@ -88,6 +95,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "We noticed a transaction that doesn't match your usual spending pattern…",
     body: "Hi Sofia,\n\nWe noticed a transaction of $312.00 at an unfamiliar merchant that doesn't match your usual spending pattern.\n\nIf this was you, no action is needed. If not, please log in immediately to dispute the charge or call 1-800-935-9935.\n\nChase Security Team",
     time: "3:17 AM",
+    receivedAt: 1730891820000,
   },
   {
     id: "eval-006",
@@ -100,6 +108,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Hey Sofia, Ana called in sick and I need someone to cover her Friday…",
     body: "Hey Sofia,\n\nAna called in sick for Friday. I know it's short notice but you're the only one available. Can you confirm by noon whether you can take her 2–10 PM shift?\n\nLet me know ASAP.\n\nMarcus",
     time: "10:11 AM",
+    receivedAt: 1730916660000,
   },
   {
     id: "eval-007",
@@ -112,6 +121,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Your water service may be interrupted if payment is not received by…",
     body: "Dear Sofia Rivera,\n\nThis is a final notice. Your water bill balance of $94.50 is past due. Service may be interrupted if payment is not received by November 10th.\n\nPay online at cityutilities.gov or call (555) 800-2222.\n\nCity Utilities Billing",
     time: "11:30 AM",
+    receivedAt: 1730921400000,
   },
   {
     id: "eval-008",
@@ -124,6 +134,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "We received information from a third party that differs from what…",
     body: "Dear Taxpayer,\n\nWe received information from a third party that differs from what you reported on your 2022 federal tax return. Please review the enclosed notice and respond by December 1st.\n\nIf you agree, sign and return the response page. If you disagree, provide a written explanation with supporting documentation.\n\nInternal Revenue Service",
     time: "Yesterday",
+    receivedAt: 1730829600000,
     attachment: { name: "CP2000_Notice.pdf", meta: "PDF · 340 KB" },
   },
   {
@@ -137,6 +148,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Maya's asthma inhaler authorization expired last month. Please…",
     body: "Hi Sofia,\n\nMaya's asthma inhaler authorization form expired on October 31st. Per district policy, we cannot administer any medication without a current form.\n\nPlease complete and return the attached form as soon as possible.\n\nLincoln Elementary School Nurse",
     time: "Yesterday",
+    receivedAt: 1730829600000,
     attachment: { name: "Medication_Authorization.pdf", meta: "PDF · 88 KB" },
   },
   {
@@ -150,6 +162,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Your auto insurance policy #AZ-884921 renews on November 12th. To…",
     body: "Hi Sofia,\n\nYour auto insurance policy #AZ-884921 renews on November 12th. To avoid a lapse in coverage, please make your payment of $187.00 by that date.\n\nLog in at aaa.com or call (800) 222-4357.\n\nAAA Member Services",
     time: "Mon",
+    receivedAt: 1730743200000,
   },
   {
     id: "eval-011",
@@ -162,6 +175,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Conference slots are filling up fast. If you haven't signed up for…",
     body: "Dear Parents and Guardians,\n\nParent-teacher conference slots for November 20–21 are filling quickly. If you haven't signed up yet, please do so today — the sign-up form closes at midnight.\n\nVisit the school portal to choose your time slot.\n\nPrincipal Torres\nLincoln Elementary",
     time: "Mon",
+    receivedAt: 1730743200000,
   },
   {
     id: "eval-012",
@@ -174,6 +188,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Maya's prescription is ready for pickup. It will be returned to stock…",
     body: "Hi Sofia,\n\nMaya's prescription (Amoxicillin 250mg) is ready for pickup at the Oak Ave Walgreens location.\n\nPrescriptions not picked up within 7 days are returned to stock.\n\nWalgreens Pharmacy Team",
     time: "Sun",
+    receivedAt: 1730656800000,
   },
   {
     id: "eval-013",
@@ -186,6 +201,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Your annual escrow analysis shows a shortage of $432. You can either…",
     body: "Dear Sofia Rivera,\n\nYour annual escrow analysis shows a shortage of $432.00. You have two options:\n\n1. Pay the shortage in full by December 1st to keep your monthly payment the same.\n2. Do nothing and have your monthly payment increase by $36/month starting in January.\n\nLog in to loancare.net to review your analysis or make a payment.\n\nLoanCare Customer Service",
     time: "Sat",
+    receivedAt: 1730570400000,
   },
   {
     id: "eval-014",
@@ -198,6 +214,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Hey, I have a doctor's appointment Thursday afternoon. Any chance…",
     body: "Hey Sofia,\n\nI have a doctor's appointment Thursday at 3 PM and I can't reschedule. Any chance you could swap shifts with me? I'd take your Saturday morning in exchange.\n\nLet me know by tonight if you can.\n\nAna",
     time: "Sat",
+    receivedAt: 1730570400000,
   },
   {
     id: "eval-015",
@@ -210,6 +227,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Your vehicle registration for 2017 Honda Civic expires on November…",
     body: "Dear Sofia Rivera,\n\nYour vehicle registration for your 2017 Honda Civic (plate: 7GHT221) expires on November 18th.\n\nRenew online at dmv.gov to avoid fines. A smog check may be required before renewal.\n\nCalifornia DMV",
     time: "Fri",
+    receivedAt: 1730484000000,
   },
   {
     id: "eval-016",
@@ -222,6 +240,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Your Xfinity account has an outstanding balance. To avoid service…",
     body: "Hi Sofia,\n\nYour Xfinity account has an outstanding balance of $142.88. To avoid interruption to your internet and cable service, please make a payment by November 8th.\n\nPay at xfinity.com, in the app, or at any Xfinity store.\n\nComcast Billing",
     time: "Fri",
+    receivedAt: 1730484000000,
   },
   {
     id: "eval-017",
@@ -234,6 +253,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Maya's school lunch account has a negative balance of $14.50. Please…",
     body: "Dear Sofia Rivera,\n\nMaya's school lunch account has a negative balance of $14.50. Students with negative balances over $20 may receive an alternate meal.\n\nPlease add funds at lausd.nutrislice.com or send cash to the school cafeteria.\n\nLAUSD Food Services",
     time: "Thu",
+    receivedAt: 1730397600000,
   },
   {
     id: "eval-018",
@@ -246,6 +266,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "We're still waiting on the repair estimate and photos for your claim…",
     body: "Dear Sofia,\n\nWe're still waiting on the repair estimate and photos for your claim #8842190 filed on October 28th. Without them, we cannot process your claim.\n\nPlease upload the documents through the StateFarm app or email them to claims@statefarm.com.\n\nState Farm Claims Team",
     time: "Thu",
+    receivedAt: 1730397600000,
     attachment: { name: "Claim_Checklist.pdf", meta: "PDF · 56 KB" },
   },
 
@@ -263,6 +284,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Here is the agenda for tomorrow's 9 AM all-hands. Topics include Q4…",
     body: "Hi Team,\n\nPlease find the agenda for tomorrow's 9 AM all-hands meeting:\n\n1. Q4 staffing updates\n2. New patient intake process\n3. Holiday schedule reminders\n4. Open Q&A\n\nSee you there.",
     time: "8:12 AM",
+    receivedAt: 1730909520000,
   },
   {
     id: "eval-020",
@@ -275,6 +297,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Hey! My mom is doing Thanksgiving at her place again. Would love for…",
     body: "Hey Sofia!\n\nMy mom is doing Thanksgiving at her place again this year. Would love for you and Maya to join us if you don't have other plans! It's pretty low-key — just food, football, and pie.\n\nLet me know by next week so she can plan the food.\n\nLove,\nRebekah",
     time: "7:30 AM",
+    receivedAt: 1730907000000,
   },
   {
     id: "eval-021",
@@ -287,6 +310,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Based on your skills, these roles might interest you: Charge Nurse…",
     body: "Hi Sofia,\n\nBased on your profile and skills, these roles might interest you:\n\n• Charge Nurse – Cedars-Sinai (Los Angeles, CA)\n• Clinical Coordinator – Kaiser Permanente (Pasadena, CA)\n• RN Case Manager – UCLA Health (Remote)\n\nView all matches at linkedin.com/jobs.",
     time: "6:00 AM",
+    receivedAt: 1730901600000,
   },
   {
     id: "eval-022",
@@ -299,6 +323,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Good news! The book you placed on hold is ready for pickup at the…",
     body: "Hi Sofia,\n\nGood news! The book you placed on hold, The Body Keeps the Score by Bessel van der Kolk, is ready for pickup at the Silver Lake branch.\n\nIt will be held until November 14th.\n\nLos Angeles Public Library",
     time: "Yesterday",
+    receivedAt: 1730829600000,
   },
   {
     id: "eval-023",
@@ -311,6 +336,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "We're adding a new Yoga Nidra class to the Silver Lake schedule…",
     body: "Hi Sofia,\n\nWe're excited to announce a new Yoga Nidra class at the Silver Lake location, starting next Monday at 7:30 PM.\n\nSpots are limited — reserve yours in the Crunch app.\n\nCrunch Fitness",
     time: "Yesterday",
+    receivedAt: 1730829600000,
   },
   {
     id: "eval-024",
@@ -323,6 +349,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Mitski just dropped a new album. Listen now on Spotify…",
     body: "Hi Sofia,\n\nMitski just released a new album. Jump in and listen now on Spotify — we think you'll love it based on your listening history.\n\nThe Spotify Team",
     time: "Mon",
+    receivedAt: 1730743200000,
   },
   {
     id: "eval-025",
@@ -335,6 +362,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Mija, just wanted to catch up. Nothing urgent, just miss you and…",
     body: "Mija,\n\nJust wanted to catch up. Nothing urgent, just miss you and Maya. Dad and I are coming to LA in December — maybe we can do Christmas together this year?\n\nCall me when you have a free moment.\n\nLove, Mom",
     time: "Mon",
+    receivedAt: 1730743200000,
   },
   {
     id: "eval-026",
@@ -347,6 +375,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Hi Sofia, just a heads up that your annual performance review is…",
     body: "Hi Sofia,\n\nJust a heads up — your annual performance review is scheduled for December 3rd at 2:00 PM in my office. You'll receive a self-assessment form to complete next week.\n\nLooking forward to it.\n\nMarcus",
     time: "Sun",
+    receivedAt: 1730656800000,
   },
   {
     id: "eval-027",
@@ -359,6 +388,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Your Costco Gold Star membership renews on December 1st. No action…",
     body: "Hi Sofia,\n\nYour Costco Gold Star membership renews on December 1st and will be automatically charged to the card on file.\n\nIf you'd like to upgrade, cancel, or update payment info, log in to costco.com.\n\nCostco Member Services",
     time: "Sun",
+    receivedAt: 1730656800000,
   },
   {
     id: "eval-028",
@@ -371,6 +401,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Attached is this month's classroom newsletter. Highlights include the…",
     body: "Hi families,\n\nPlease find the November newsletter attached. Highlights include our unit on habitats, the book fair coming December 2–6, and a reminder about spirit week the week before Thanksgiving break.\n\nHave a wonderful weekend!\nDani",
     time: "Sat",
+    receivedAt: 1730570400000,
     attachment: { name: "November_Newsletter.pdf", meta: "PDF · 320 KB" },
   },
   {
@@ -384,6 +415,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Hey sis! Maya's birthday is coming up and I want to get her something…",
     body: "Hey sis!\n\nMaya's birthday is coming up and I want to get her something good this year — not a gift card. Is there anything she's really into right now? Books, games, art stuff?\n\nAlso we should coordinate on the party!\n\nXo Elena",
     time: "Sat",
+    receivedAt: 1730570400000,
   },
   {
     id: "eval-030",
@@ -396,6 +428,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Your neighbor Janet posted about the upcoming street repair on Oak Ave…",
     body: "Hi Sofia,\n\nYour neighbor Janet posted in Silver Lake: \"Heads up — the city will be repaving Oak Ave next Monday through Wednesday. Parking restrictions 7 AM–5 PM.\"\n\nReply or react on Nextdoor.",
     time: "Fri",
+    receivedAt: 1730484000000,
   },
   {
     id: "eval-031",
@@ -408,6 +441,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Based on your driving record, you qualify for an additional 8%…",
     body: "Hi Sofia,\n\nBased on your clean driving record, you qualify for an additional 8% safe driver discount on your next renewal.\n\nLog in to aaa.com to apply the discount before your renewal date.\n\nAAA Member Services",
     time: "Fri",
+    receivedAt: 1730484000000,
   },
   {
     id: "eval-032",
@@ -420,6 +454,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "It's flu season! Schedule your free flu shot at any Kaiser location…",
     body: "Hi Sofia,\n\nFlu season is here. As a Kaiser member you can get a free flu shot at any Kaiser Permanente location — no appointment needed, walk-ins welcome.\n\nSchedule yours at kp.org.\n\nKaiser Permanente",
     time: "Thu",
+    receivedAt: 1730397600000,
   },
   {
     id: "eval-033",
@@ -432,6 +467,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "The book fair is coming up Dec 2–6 and we need volunteers to help…",
     body: "Hi families,\n\nThe annual book fair is coming up December 2–6 and we need volunteers to help set up, run the register, and break down.\n\nSign up at the link below if you're available for any of those days. Even one shift helps!\n\nLincoln Elementary PTA",
     time: "Thu",
+    receivedAt: 1730397600000,
   },
   {
     id: "eval-034",
@@ -444,6 +480,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Your CalFresh benefits are up for recertification in 60 days. No…",
     body: "Dear Sofia Rivera,\n\nYour CalFresh benefits are due for recertification in 60 days. There is no action needed right now, but please watch for a notice in the mail with instructions.\n\nYou can also manage your case online at mybenefitscalwin.org.\n\nCalifornia Department of Social Services",
     time: "Wed",
+    receivedAt: 1730311200000,
   },
   {
     id: "eval-035",
@@ -456,6 +493,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "A new software update is available. We recommend updating over Wi-Fi…",
     body: "Hi Sofia,\n\niOS 18 is now available for your iPhone 13. This update includes new home screen customisation, improvements to Messages, and enhanced privacy controls.\n\nWe recommend updating over Wi-Fi. Go to Settings → General → Software Update.\n\nApple",
     time: "Tue",
+    receivedAt: 1730224800000,
   },
 
 
@@ -472,6 +510,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Your order #114-8829231 is on the way and will arrive by Thursday…",
     body: "Hi Sofia,\n\nYour order #114-8829231 has shipped and is on its way.\n\nEstimated delivery: Thursday by 8 PM.\n\nItems: Maya's art kit, liquid watercolours set.\n\nTrack your package in the Amazon app.",
     time: "7:03 AM",
+    receivedAt: 1730905380000,
   },
   {
     id: "eval-037",
@@ -484,6 +523,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Your recent Target purchases earned you $8.50 in rewards. Use them…",
     body: "Hi Sofia,\n\nYour recent Target purchases earned you $8.50 in Target Circle rewards. Your rewards expire in 30 days.\n\nUse them on your next in-store or online purchase.\n\nTarget Circle",
     time: "6:45 AM",
+    receivedAt: 1730904300000,
   },
   {
     id: "eval-038",
@@ -496,6 +536,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Thanks for riding with Uber. Here is your receipt for the trip from…",
     body: "Hi Sofia,\n\nThanks for riding with Uber!\n\nTrip: Silver Lake → Cedars-Sinai Medical Center\nDate: November 5, 8:42 AM\nTotal: $14.20\n\nRate your driver or get help at help.uber.com.",
     time: "Yesterday",
+    receivedAt: 1730829600000,
   },
   {
     id: "eval-039",
@@ -508,6 +549,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Your November statement for account ending in 4421 is now available…",
     body: "Hi Sofia,\n\nYour November statement for the account ending in 4421 is now available in Online Banking.\n\nView it at bankofamerica.com or in the mobile app.\n\nBank of America",
     time: "Mon",
+    receivedAt: 1730743200000,
     attachment: { name: "Nov_Statement_4421.pdf", meta: "PDF · 92 KB" },
   },
   {
@@ -521,6 +563,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Based on what you've been watching, here are some new titles…",
     body: "Hi Sofia,\n\nBased on what you've been watching, here are some new titles we think you'll love this week:\n\n• The Diplomat (Season 2)\n• Transatlantic\n• Dear Child\n\nStart watching at netflix.com.\n\nThe Netflix Team",
     time: "Mon",
+    receivedAt: 1730743200000,
   },
   {
     id: "eval-041",
@@ -533,6 +576,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Your Instacart order from Ralphs was delivered today at 11:48 AM…",
     body: "Hi Sofia,\n\nYour Instacart order from Ralphs was delivered today at 11:48 AM.\n\nItems: Oat milk (2), eggs, spinach, rice, black beans, chicken breast, bananas.\n\nRate your shopper or report an issue in the Instacart app.",
     time: "Sun",
+    receivedAt: 1730656800000,
   },
   {
     id: "eval-042",
@@ -545,6 +589,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Seven days in a row! Keep going — consistency is where the magic…",
     body: "Hi Sofia,\n\nYou've meditated 7 days in a row — that's a streak worth celebrating.\n\nKeep going. Consistency is where the real change happens. Today's session is ready for you.\n\nThe Headspace Team",
     time: "Sun",
+    receivedAt: 1730656800000,
   },
   {
     id: "eval-043",
@@ -557,6 +602,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Rebekah H. sent you $25.00 with the note 'Dinner last week ❤️'…",
     body: "Hi Sofia,\n\nRebekah H. sent you $25.00.\n\nNote: \"Dinner last week ❤️\"\n\nYour Venmo balance is now $38.50. Transfer to your bank at venmo.com.\n\nVenmo",
     time: "Sat",
+    receivedAt: 1730570400000,
   },
   {
     id: "eval-044",
@@ -569,6 +615,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "A reminder that Lincoln Elementary will be closed on Monday, November…",
     body: "Dear Families,\n\nThis is a reminder that all LAUSD schools, including Lincoln Elementary, will be closed on Monday, November 11th in observance of Veterans Day.\n\nRegular school hours resume Tuesday.\n\nLAUSD Communications",
     time: "Fri",
+    receivedAt: 1730484000000,
   },
   {
     id: "eval-045",
@@ -581,6 +628,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Your DoorDash order from Chipotle was delivered at 6:52 PM. Enjoy!…",
     body: "Hi Sofia,\n\nYour order from Chipotle was delivered at 6:52 PM.\n\nItems: Chicken burrito bowl (x2), chips & guac, water.\nTotal: $32.47 (incl. delivery + tip)\n\nRate your experience in the app.\n\nDoorDash",
     time: "Thu",
+    receivedAt: 1730397600000,
   },
   {
     id: "eval-046",
@@ -593,6 +641,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Your monthly iCloud+ 50 GB plan was charged $0.99 to the card ending…",
     body: "Hi Sofia,\n\nYour monthly iCloud+ 50 GB plan was charged $0.99 to the Visa card ending in 8831.\n\nThis is an automated receipt. Questions? Visit support.apple.com.\n\nApple",
     time: "Wed",
+    receivedAt: 1730311200000,
   },
   {
     id: "eval-047",
@@ -605,6 +654,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "We noticed a new sign-in to your Google account from a MacBook Pro…",
     body: "Hi Sofia,\n\nWe noticed a new sign-in to your Google account from a MacBook Pro in Los Angeles, CA.\n\nIf this was you, no action is needed. If not, secure your account at myaccount.google.com.\n\nThe Google Account Team",
     time: "Tue",
+    receivedAt: 1730224800000,
   },
   {
     id: "eval-048",
@@ -617,6 +667,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Mark your calendar — the IRS begins accepting returns on January 27th…",
     body: "Hi Sofia,\n\nMark your calendar — the IRS begins accepting 2024 tax returns on January 27th. TurboTax will be ready on day one.\n\nWe'll send a reminder when it's time to get started.\n\nTurboTax",
     time: "Tue",
+    receivedAt: 1730224800000,
   },
   {
     id: "eval-049",
@@ -629,6 +680,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "A Wind Advisory is in effect from 9 PM tonight through 6 AM tomorrow…",
     body: "WIND ADVISORY — Los Angeles County\n\nA Wind Advisory is in effect from 9 PM tonight through 6 AM tomorrow. Southwest winds 25–35 mph with gusts up to 55 mph.\n\nSecure any loose outdoor items. Drive with care, especially on overpasses and in open areas.\n\nNWS Los Angeles",
     time: "Mon",
+    receivedAt: 1730743200000,
   },
   {
     id: "eval-050",
@@ -641,6 +693,7 @@ export const EVAL_EMAILS: Task[] = [
     preview: "Ana mentioned you in #general: 'Thanks @sofia for covering Thursday!…",
     body: "Hi Sofia,\n\nAna mentioned you in #general:\n\n\"Thanks @sofia for covering Thursday! You saved the day 🙌\"\n\nReply in Slack at meridianhealth.slack.com.\n\nThe Slack Team",
     time: "Mon",
+    receivedAt: 1730743200000,
   },
 ];
 
