@@ -28,9 +28,13 @@
 
 import { useEffect, useState }        from "react";
 import { toClassifyInput }            from "@/types/email";
-import { DEMO_TASKS, GREETING_NAME }  from "@/data/dashboard";
+import { GREETING_NAME }              from "@/data/dashboard";
+import { EVAL_EMAILS }                from "@/data/emailDataset";
 import type { Task, TaskPriority }    from "@/types/dashboard";
 import type { ClassifyResult, DailyBriefResult } from "@/services/agent/types";
+
+// The live inbox — 50 realistic emails covering all three priority buckets.
+const INBOX = EVAL_EMAILS;
 
 // ─── Sort helpers ────────────────────────────────────────────────
 
@@ -92,7 +96,7 @@ export function useClassifiedEmails(): UseClassifiedEmailsResult {
           method:  "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            emails: DEMO_TASKS.map((task) =>
+            emails: INBOX.map((task) =>
               toClassifyInput({
                 id:          task.id,
                 sender:      task.sender,
@@ -116,7 +120,7 @@ export function useClassifiedEmails(): UseClassifiedEmailsResult {
         if (cancelled) return;
 
         // 2. Merge agent priorities back onto Task objects.
-        const mergedTasks: Task[] = DEMO_TASKS.map((task, i) => ({
+        const mergedTasks: Task[] = INBOX.map((task, i) => ({
           ...task,
           priority: results[i].priority,
         }));
