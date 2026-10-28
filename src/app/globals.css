@@ -110,44 +110,41 @@
    :root — concrete light-mode values
    ───────────────────────────────────────────── */
 :root {
-  /* Background (gradient applied on body) */
-  --luma-bg: #ddeeff;
+  /* Background — soft periwinkle-blue atmosphere matching reference */
+  --luma-bg: #dae6f5;
   --luma-bg-gradient:
-    radial-gradient(ellipse 140% 80% at 20% -10%, #cce8ff 0%, transparent 60%),
-    radial-gradient(ellipse 100% 60% at 80% 110%,  #d6e8ff 0%, transparent 55%),
-    linear-gradient(160deg, #e8f4ff 0%, #ddeeff 40%, #e4edff 100%);
+    radial-gradient(ellipse 160% 90% at 15% -5%,  #c8dff7 0%, transparent 55%),
+    radial-gradient(ellipse 120% 70% at 85% 105%,  #ccd8f0 0%, transparent 50%),
+    radial-gradient(ellipse 80%  50% at 50%  50%,  #dde9f8 0%, transparent 70%),
+    linear-gradient(160deg, #e2eefa 0%, #d8e8f6 35%, #dce6f4 70%, #e0e8f5 100%);
 
-  /* Glass surfaces
-     — semi-transparent white, never opaque
-     — blur is applied via CSS class, not here */
-  --luma-glass:         rgba(255, 255, 255, 0.62);
-  --luma-glass-raised:  rgba(255, 255, 255, 0.80);
-  --luma-glass-border:  rgba(180, 210, 255, 0.45);
+  /* Glass surfaces — slightly warmer white tint */
+  --luma-glass:         rgba(255, 255, 255, 0.68);
+  --luma-glass-raised:  rgba(255, 255, 255, 0.85);
+  --luma-glass-border:  rgba(160, 195, 240, 0.50);
 
-  /* Text — navy for maximum contrast on blue bg
-     All meet WCAG AA on the glass surface */
-  --luma-text-primary:   #0f1c2e;   /* ~#0f1c2e on white: 14.5:1 ✓ */
-  --luma-text-secondary: #2c4263;   /* 7.2:1 ✓ */
-  --luma-text-tertiary:  #5470a0;   /* 4.6:1 ✓ (AA large / UI) */
-  --luma-text-disabled:  #94aac8;   /* decorative only */
+  /* Text — deep navy for contrast */
+  --luma-text-primary:   #0d1b2e;
+  --luma-text-secondary: #2a3f60;
+  --luma-text-tertiary:  #526891;
+  --luma-text-disabled:  #92aac6;
   --luma-text-inverse:   #ffffff;
 
   /* Brand */
-  --luma-blue:         #2563eb;   /* primary action blue */
-  --luma-blue-soft:    rgba(37, 99, 235, 0.10);
-  --luma-purple:       #7c3aed;   /* secondary accent, use sparingly */
+  --luma-blue:         #3b7de8;   /* slightly softer primary blue */
+  --luma-blue-soft:    rgba(59, 125, 232, 0.11);
+  --luma-purple:       #7c3aed;
   --luma-purple-soft:  rgba(124, 58, 237, 0.10);
 
-  /* Email priority semantic colors
-     — always paired with an icon or label (not color alone) */
-  --luma-urgent:       #dc2626;   /* red   — needs response today */
+  /* Email priority semantic colors */
+  --luma-urgent:       #dc2626;
   --luma-urgent-soft:  rgba(220, 38, 38, 0.09);
-  --luma-action:       #2563eb;   /* blue  — needs action */
-  --luma-action-soft:  rgba(37, 99, 235, 0.09);
-  --luma-later:        #16a34a;   /* green — can wait */
-  --luma-later-soft:   rgba(22, 163, 74, 0.09);
-  --luma-news:         #7c3aed;   /* purple — FYI / newsletter */
-  --luma-news-soft:    rgba(124, 58, 237, 0.09);
+  --luma-action:       #5b6ef5;   /* periwinkle-blue — ACTION pill */
+  --luma-action-soft:  rgba(91, 110, 245, 0.10);
+  --luma-later:        #d97706;   /* warm amber — LATER pill */
+  --luma-later-soft:   rgba(217, 119, 6, 0.10);
+  --luma-news:         #64748b;   /* slate — NEWS pill */
+  --luma-news-soft:    rgba(100, 116, 139, 0.10);
 }
 
 /* ─────────────────────────────────────────────

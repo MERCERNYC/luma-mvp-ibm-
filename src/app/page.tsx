@@ -72,7 +72,7 @@ function SummaryCard({ icon, label, count, description, accent, accentBg }: Summ
 }
 
 export default function DashboardPage() {
-  const { status, tasks, urgencies, briefText } = useClassifiedEmails();
+  const { status, tasks, briefText } = useClassifiedEmails();
 
   const [showAll,  setShowAll]  = useState(false);
   const [selected, setSelected] = useState<Task | null>(null);
@@ -82,8 +82,8 @@ export default function DashboardPage() {
   const newsCount    = tasks.filter((t) => t.priority === "news-updates").length;
 
   const visibleTasks = showAll ? tasks : tasks.slice(0, FOCUS_LIMIT);
-  const defaultTask  = visibleTasks[0];
-  const activeTask   = selected ?? defaultTask ?? null;
+  // No default — pane starts closed; user must click a row to open it
+  const activeTask   = selected ?? null;
 
   // Subtitle varies by loading state
   const subtitle = status === "loading"
@@ -172,8 +172,7 @@ export default function DashboardPage() {
               <div key={task.id} role="listitem">
                 <EmailRow
                   task={task}
-                  urgencyScore={urgencies[task.id]}
-                  isSelected={(selected ?? defaultTask)?.id === task.id}
+                  isSelected={selected?.id === task.id}
                   onSelect={setSelected}
                 />
               </div>
@@ -189,16 +188,16 @@ export default function DashboardPage() {
           label="Action Needed"
           count={status === "ready" ? actionCount : 0}
           description="Requires a reply or decision"
-          accent="#dc2626"
-          accentBg="rgba(220,38,38,0.04)"
+          accent="var(--luma-action)"
+          accentBg="var(--luma-action-soft)"
         />
         <SummaryCard
           icon={<span style={{ fontSize: 18 }}>🕐</span>}
           label="For Later"
           count={status === "ready" ? laterCount : 0}
           description="Keep on your radar"
-          accent="#b45309"
-          accentBg="rgba(245,158,11,0.06)"
+          accent="var(--luma-later)"
+          accentBg="var(--luma-later-soft)"
         />
         <SummaryCard
           icon={<span style={{ fontSize: 18 }}>📰</span>}
@@ -206,7 +205,7 @@ export default function DashboardPage() {
           count={status === "ready" ? newsCount : 0}
           description="FYI and newsletters"
           accent="var(--luma-blue)"
-          accentBg="rgba(37,99,235,0.04)"
+          accentBg="var(--luma-blue-soft)"
         />
       </div>
 
