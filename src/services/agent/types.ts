@@ -13,11 +13,16 @@ import type { Task, TaskPriority } from "@/types/dashboard";
 /**
  * Semantic category of the email, independent of priority.
  *
- * communication   — person-to-person or organisation-to-person requiring
- *                   awareness or a reply (school, employer, government).
- * notification    — automated status update (shipment, receipt, sign-in).
- * promotion       — marketing, offers, rewards, recommendations.
- * potential_spam  — suspicious, unsolicited, or deceptive content.
+ * emailType describes the ORIGIN and NATURE of the message.
+ * It does NOT determine requiresAction or priority — a notification
+ * can be urgent and require action; a communication can require none.
+ *
+ * communication   — primarily person-to-person correspondence
+ *                   (individuals, teachers, managers, personal contacts).
+ * notification    — automated, system, organizational, or account message
+ *                   (alerts, reminders, billing, status updates, receipts).
+ * promotion       — marketing or commercial content.
+ * potential_spam  — suspicious, potentially unwanted, or deceptive content.
  */
 export type EmailType =
   | "communication"
@@ -32,6 +37,8 @@ export type EmailType =
  * decide which priority bucket an email belongs in.
  */
 export interface ClassifyInput {
+  /** Dataset email ID, e.g. "wx-001" — passed through to the agent and preserved in its response. */
+  id:          string;
   subject:     string;
   preview:     string;
   body:        string;

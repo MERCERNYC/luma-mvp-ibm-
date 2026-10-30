@@ -45,7 +45,7 @@ export interface Email {
 
   // ── Meta ──────────────────────────────────────────────────────
   /** Human-readable timestamp shown in the UI, e.g. "9:24 AM" */
-  time: string;
+  time?: string;
   /**
    * Unix epoch milliseconds when the email was received.
    * Used for sort-order tiebreaking — most recent first within a bucket.
@@ -97,6 +97,7 @@ export interface EvaluationEmail extends Email {
  */
 export function toClassifyInput(email: Email) {
   return {
+    id:          email.id,
     subject:     email.subject,
     preview:     email.preview,
     body:        email.body,

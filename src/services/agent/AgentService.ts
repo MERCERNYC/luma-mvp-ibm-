@@ -32,22 +32,19 @@ import type {
   DailyBriefInput,
   DailyBriefResult,
 } from "./types";
-import { MockAgent } from "./MockAgent";
+import { MockAgent }     from "./MockAgent";
+import { WatsonxAgent }  from "./WatsonxAgent";
 
 // ─── Provider resolution ─────────────────────────────────────────
 // Reads AGENT_PROVIDER env var at module load time (server-only).
 // "mock"    → MockAgent  (default, zero dependencies)
-// "watsonx" → WatsonxAgent (to be added when credentials are ready)
+// "watsonx" → WatsonxAgent (calls deployed Orchestrate agent)
 
 function resolveProvider(): IAgent {
   const provider = process.env.AGENT_PROVIDER ?? "mock";
 
-  if (provider === "mock") {
-    return new MockAgent();
-  }
-
-  // Placeholder guard — swap this block when WatsonxAgent exists:
-  // if (provider === "watsonx") { return new WatsonxAgent(); }
+  if (provider === "mock")    return new MockAgent();
+  if (provider === "watsonx") return new WatsonxAgent();
 
   console.warn(
     `[AgentService] Unknown AGENT_PROVIDER "${provider}". Falling back to MockAgent.`,

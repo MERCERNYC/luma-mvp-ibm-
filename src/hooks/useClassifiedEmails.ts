@@ -29,12 +29,12 @@
 import { useEffect, useState }        from "react";
 import { toClassifyInput }            from "@/types/email";
 import { GREETING_NAME }              from "@/data/dashboard";
-import { EVAL_EMAILS }                from "@/data/emailDataset";
+import { WATSON_EVAL_EMAILS, evalEmailsToTasks } from "@/data/emailEvaluationDataset";
 import type { Task, TaskPriority }    from "@/types/dashboard";
 import type { ClassifyResult, DailyBriefResult } from "@/services/agent/types";
 
-// The live inbox — 50 realistic emails covering all three priority buckets.
-const INBOX = EVAL_EMAILS;
+// The live inbox — 50 emails from the v7-validated evaluation dataset.
+const INBOX = evalEmailsToTasks(WATSON_EVAL_EMAILS);
 
 // ─── Sort helpers ────────────────────────────────────────────────
 
@@ -101,19 +101,7 @@ export function useClassifiedEmails(): UseClassifiedEmailsResult {
           method:  "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            emails: INBOX.map((task) =>
-              toClassifyInput({
-                id:          task.id,
-                sender:      task.sender,
-                senderEmail: task.senderEmail,
-                subject:     task.subject,
-                preview:     task.preview,
-                body:        task.body,
-                time:        task.time,
-                receivedAt:  task.receivedAt,
-                attachment:  task.attachment,
-              }),
-            ),
+            emails: WATSON_EVAL_EMAILS.map(toClassifyInput),
           }),
         });
 

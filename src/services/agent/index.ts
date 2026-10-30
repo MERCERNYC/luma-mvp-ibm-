@@ -29,6 +29,7 @@ export type {
 } from "./types";
 
 export { MockAgent }    from "./MockAgent";
+export { WatsonxAgent } from "./WatsonxAgent";
 export { AgentService } from "./AgentService";
 
 import { AgentService } from "./AgentService";
