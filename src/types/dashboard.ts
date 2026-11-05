@@ -4,6 +4,19 @@
    For Later / News & Updates
    ═══════════════════════════════════════════════ */
 
+// ─── Feedback / correction ───────────────────────
+
+/**
+ * Recorded whenever Sofia overrides an agent priority.
+ * Stored in localStorage under "luma_feedback".
+ */
+export interface FeedbackCorrection {
+  taskId:        string;
+  lumaOriginal:  TaskPriority;
+  sofiaChanged:  TaskPriority;
+  timestamp:     number; /* Unix ms */
+}
+
 /** Icon variant for the sender avatar background */
 export type IconVariant = "doc" | "people" | "home" | "mail" | "calendar" | "chart";
 
@@ -45,4 +58,13 @@ export interface Task {
    */
   receivedAt: number;
   attachment?: EmailAttachment;
+  /** LUMA Intelligence — why this email was surfaced (from agent) */
+  reason?: string;
+  /** LUMA Intelligence — suggested next step (from agent), null when none */
+  recommendedAction?: string | null;
+  /**
+   * Within-bucket urgency from the agent (0–1).
+   * Drives "Urgent" vs "Action" badge: ≥ 0.85 = Urgent (today/tomorrow/immediate).
+   */
+  urgencyScore?: number;
 }

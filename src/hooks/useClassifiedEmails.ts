@@ -112,10 +112,13 @@ export function useClassifiedEmails(): UseClassifiedEmailsResult {
 
         if (cancelled) return;
 
-        // 2. Merge agent priorities back onto Task objects.
+        // 2. Merge agent priorities + insight fields back onto Task objects.
         const mergedTasks: Task[] = INBOX.map((task, i) => ({
           ...task,
-          priority: results[i].priority,
+          priority:          results[i].priority,
+          reason:            results[i].reason,
+          recommendedAction: results[i].recommendedAction,
+          urgencyScore:      results[i].urgencyScore,
         }));
 
         // 3. Sort: bucket rank → urgencyScore desc → receivedAt desc.

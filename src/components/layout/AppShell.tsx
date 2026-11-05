@@ -1,7 +1,8 @@
-import { Header } from "@/components/layout/Header";
+import { Header }      from "@/components/layout/Header";
+import { FocusTimer }  from "@/components/layout/FocusTimer";
 
 /* ─────────────────────────────────────────────
-   AppShell — v3
+   AppShell — v4
    Layout: header on top, then three columns:
      left sidebar  | main content | email pane (only when open)
    ───────────────────────────────────────────── */
@@ -18,46 +19,13 @@ export function AppShell({ children, emailPane }: AppShellProps) {
 
       <div className="flex flex-1 overflow-hidden">
 
-        {/* ── Left sidebar — Breathe & Focus ─────── */}
+        {/* ── Left sidebar — Focus Timer ───────────── */}
         <nav
-          className="w-52 shrink-0 flex flex-col gap-3 px-4 py-6 overflow-y-auto"
+          className="w-60 shrink-0 flex flex-col gap-3 px-4 py-6 overflow-y-auto"
           style={{ borderRight: "1px solid var(--luma-glass-border)" }}
           aria-label="Sidebar"
         >
-          {/* Breathe & Focus card */}
-          <div
-            className="rounded-[var(--radius-2xl)] px-4 py-5 flex flex-col items-center gap-2 text-center"
-            style={{
-              background: "linear-gradient(135deg, rgba(37,99,235,0.08) 0%, rgba(124,58,237,0.10) 100%)",
-              border: "1px solid var(--luma-glass-border)",
-            }}
-          >
-            {/* Lotus SVG */}
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-              <path
-                d="M16 26c0 0-8-5-8-12a8 8 0 0 1 8-8 8 8 0 0 1 8 8c0 7-8 12-8 12z"
-                fill="rgba(124,58,237,0.15)" stroke="rgba(124,58,237,0.5)" strokeWidth="1.2"
-              />
-              <path
-                d="M16 26c0 0-5-4-5-9a5 5 0 0 1 5-5 5 5 0 0 1 5 5c0 5-5 9-5 9z"
-                fill="rgba(37,99,235,0.12)" stroke="rgba(37,99,235,0.4)" strokeWidth="1"
-              />
-              <circle cx="16" cy="17" r="2" fill="rgba(124,58,237,0.4)" />
-            </svg>
-
-            <p
-              className="text-[var(--text-sm)] font-semibold"
-              style={{ color: "var(--luma-text-primary)" }}
-            >
-              Breathe &amp; Focus
-            </p>
-            <p
-              className="text-[var(--text-xs)] leading-relaxed"
-              style={{ color: "var(--luma-text-secondary)" }}
-            >
-              You&apos;re doing great. Take it one email at a time.
-            </p>
-          </div>
+          <FocusTimer />
 
           {/* Nav links */}
           <div className="flex flex-col gap-1 mt-2">

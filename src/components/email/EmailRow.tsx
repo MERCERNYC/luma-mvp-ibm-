@@ -17,15 +17,20 @@ import type { Task, TaskPriority } from "@/types/dashboard";
    ───────────────────────────────────────────── */
 
 /**
- * Derive the pill label from priority.
- *   action-needed → Action  (purple)
- *   for-later     → Later   (amber)
- *   news-updates  → News    (grey)
+ * Derive the pill label from priority + urgencyScore.
+ *   action-needed, urgencyScore ≥ 0.85 → Urgent  (red)
+ *   action-needed, urgencyScore < 0.85  → Action  (purple)
+ *   for-later                           → Later   (amber)
+ *   news-updates                        → News    (grey)
  */
 export function getPillConfig(
   priority: TaskPriority,
+  urgencyScore?: number,
 ): { label: string; color: string; bg: string } {
   if (priority === "action-needed") {
+    if ((urgencyScore ?? 0) >= 0.85) {
+      return { label: "Urgent", color: "var(--luma-urgent)", bg: "var(--luma-urgent-soft)" };
+    }
     return { label: "Action", color: "var(--luma-action)", bg: "var(--luma-action-soft)" };
   }
   if (priority === "for-later") {
@@ -55,7 +60,7 @@ export interface EmailRowProps {
 }
 
 export function EmailRow({ task, isSelected, onSelect }: EmailRowProps) {
-  const tag = getPillConfig(task.priority);
+  const tag = getPillConfig(task.priority, task.urgencyScore);
 
   return (
     <button
