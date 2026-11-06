@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useCallback }  from "react";
-import { Target, ChevronDown, ChevronUp } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import { Target, ChevronDown, ChevronUp, Sparkles, RefreshCw } from "lucide-react";
 import { AppShell }               from "@/components/layout/AppShell";
 import { EmailRow }               from "@/components/email/EmailRow";
 import { EmailPane }              from "@/components/email/EmailPane";
+import { DoneCard }               from "@/components/email/DoneCard";
 import { GREETING_NAME }          from "@/data/dashboard";
-import { useClassifiedEmails, FOCUS_LIMIT } from "@/hooks/useClassifiedEmails";
+import { useClassifiedEmails }    from "@/hooks/useClassifiedEmails";
+import { useDoneEmails }          from "@/hooks/useDoneEmails";
+import { useFocusQueue }          from "@/hooks/useFocusQueue";
 import { useFeedback }            from "@/hooks/useFeedback";
 import type { Task, TaskPriority } from "@/types/dashboard";
 
@@ -229,32 +232,57 @@ const CATEGORY_ORDER: TaskPriority[] = ["action-needed", "for-later", "news-upda
 export default function DashboardPage() {
   const { status, tasks: agentTasks } = useClassifiedEmails();
   const { recordCorrection }          = useFeedback();
+  const {
+    doneIds,
+    markDone,
+    generation,
+    prioritizeAgain,
+  } = useDoneEmails();
 
-  const [showAll,        setShowAll]        = useState(false);
+  // ── Gmail OAuth error banner ────────────────────────────────
+  const [gmailError, setGmailError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const err    = params.get("gmail_error");
+    if (err) {
+      setGmailError(decodeURIComponent(err));
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
   const [selected,       setSelected]       = useState<Task | null>(null);
-  // Set of open category panels — multiple can be open simultaneously
   const [openCategories, setOpenCategories] = useState<Set<TaskPriority>>(new Set());
-  // Priority overrides Sofia has applied this session — keyed by task id
+  // Priority overrides applied this session — keyed by task id
   const [overrides, setOverrides] = useState<Record<string, TaskPriority>>({});
-  // IDs of emails Sofia has marked as Done — filtered out of all lists
-  const [doneIds, setDoneIds] = useState<Set<string>>(new Set());
 
-  // Merge agent tasks with any session overrides, then strip done items
-  const tasks = agentTasks
-    .map((t) => overrides[t.id] ? { ...t, priority: overrides[t.id] } : t)
-    .filter((t) => !doneIds.has(t.id));
+  // Merge agent priorities with any manual overrides
+  const allTasks = agentTasks.map((t) =>
+    overrides[t.id] ? { ...t, priority: overrides[t.id] } : t,
+  );
 
-  const actionCount = tasks.filter((t) => t.priority === "action-needed").length;
-  const laterCount  = tasks.filter((t) => t.priority === "for-later").length;
-  const newsCount   = tasks.filter((t) => t.priority === "news-updates").length;
+  // Focus Now window + active tasks (both exclude done items)
+  const { focusTasks, activeTasks, isCaughtUp } = useFocusQueue(
+    allTasks,
+    doneIds,
+    generation,
+    status === "ready",
+  );
 
-  // Keep selected in sync with overrides; clear if the task was marked done
+  // Done tasks list — ordered by most recently done (last in set = most recent)
+  const doneTasks = [...doneIds]
+    .reverse()
+    .map((id) => allTasks.find((t) => t.id === id))
+    .filter((t): t is Task => t !== undefined);
+
+  const actionCount = activeTasks.filter((t) => t.priority === "action-needed").length;
+  const laterCount  = activeTasks.filter((t) => t.priority === "for-later").length;
+  const newsCount   = activeTasks.filter((t) => t.priority === "news-updates").length;
+
+  // Keep selected task in sync; clear it if marked done
   const activeTask = selected
-    ? (tasks.find((t) => t.id === selected.id) ?? null)
+    ? (activeTasks.find((t) => t.id === selected.id) ?? null)
     : null;
-
-  const focusCount = Math.min(tasks.length, FOCUS_LIMIT);
-  const focusTasks = showAll ? tasks : tasks.slice(0, FOCUS_LIMIT);
 
   const handlePriorityChange = useCallback(
     (taskId: string, lumaOriginal: TaskPriority, sofiaChanged: TaskPriority) => {
@@ -265,17 +293,15 @@ export default function DashboardPage() {
   );
 
   const handleDone = useCallback((taskId: string) => {
-    setDoneIds((prev) => { const next = new Set(prev); next.add(taskId); return next; });
-  }, []);
+    markDone(taskId);
+    // If the task being marked done is currently open in the pane, close it
+    setSelected((prev) => (prev?.id === taskId ? null : prev));
+  }, [markDone]);
 
   function toggleCategory(category: TaskPriority) {
     setOpenCategories((prev) => {
       const next = new Set(prev);
-      if (next.has(category)) {
-        next.delete(category);
-      } else {
-        next.add(category);
-      }
+      next.has(category) ? next.delete(category) : next.add(category);
       return next;
     });
   }
@@ -303,6 +329,32 @@ export default function DashboardPage() {
           : null
       }
     >
+      {/* ── Gmail error banner ───────────────────── */}
+      {gmailError && (
+        <div
+          role="alert"
+          className="flex items-center justify-between gap-3 px-5 py-3 rounded-[var(--radius-xl)] mb-4 text-[var(--text-sm)]"
+          style={{
+            background: "rgba(220,38,38,0.07)",
+            border:     "1px solid rgba(220,38,38,0.25)",
+            color:      "#b91c1c",
+          }}
+        >
+          <span>
+            <strong>Gmail connection failed</strong>
+            {" — "}{gmailError.replace(/_/g, " ")}
+          </span>
+          <button
+            type="button"
+            aria-label="Dismiss error"
+            onClick={() => setGmailError(null)}
+            className="shrink-0 font-bold opacity-70 hover:opacity-100 transition-opacity"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* ── Greeting ─────────────────────────────── */}
       <div
         className="glass rounded-[var(--radius-2xl)] px-6 py-5 mb-4"
@@ -322,9 +374,11 @@ export default function DashboardPage() {
             ? "Checking your inbox…"
             : status === "error"
               ? "Couldn't load emails right now."
-              : `${focusCount} thing${focusCount === 1 ? "" : "s"} need your attention today.`}
+              : isCaughtUp
+                ? "You're all caught up!"
+                : `${focusTasks.length} thing${focusTasks.length === 1 ? "" : "s"} need your attention today.`}
         </p>
-        {status === "ready" && (
+        {status === "ready" && !isCaughtUp && (
           <p
             className="mt-0.5 text-[var(--text-sm)]"
             style={{ color: "var(--luma-text-tertiary)" }}
@@ -349,19 +403,19 @@ export default function DashboardPage() {
             >
               Focus Now
             </h2>
+            {/* Live count badge — counts down as tasks are completed */}
+            {status === "ready" && !isCaughtUp && (
+              <span
+                className="text-[var(--text-xs)] font-semibold px-2 py-0.5 rounded-[var(--radius-full)]"
+                style={{ background: "var(--luma-blue-soft)", color: "var(--luma-blue)" }}
+              >
+                {focusTasks.length}
+              </span>
+            )}
           </div>
-          {status === "ready" && tasks.length > FOCUS_LIMIT && (
-            <button
-              onClick={() => setShowAll((v) => !v)}
-              className="text-[var(--text-sm)] font-medium"
-              style={{ color: "var(--luma-blue)" }}
-            >
-              {showAll ? "Show less" : `See all (${tasks.length}) →`}
-            </button>
-          )}
         </div>
 
-        {/* Email rows */}
+        {/* Email rows / empty states */}
         <div
           role="list"
           aria-label="Focus Now emails"
@@ -379,6 +433,51 @@ export default function DashboardPage() {
             <p className="px-5 py-6 text-[var(--text-sm)]" style={{ color: "var(--luma-text-tertiary)" }}>
               Something went wrong. Please refresh the page.
             </p>
+          ) : isCaughtUp ? (
+            /* ── Caught-up empty state ── */
+            <div
+              className="flex flex-col items-center gap-3 px-6 py-8 text-center"
+              role="status"
+              aria-live="polite"
+            >
+              <div
+                className="w-12 h-12 rounded-[var(--radius-full)] flex items-center justify-center"
+                style={{ background: "rgba(124,92,216,0.10)" }}
+                aria-hidden="true"
+              >
+                <Sparkles size={22} strokeWidth={1.5} style={{ color: "var(--luma-purple, #7c5cd8)" }} />
+              </div>
+              <div>
+                <p
+                  className="text-[var(--text-base)] font-bold"
+                  style={{ color: "var(--luma-text-primary)" }}
+                >
+                  You&rsquo;re caught up
+                </p>
+                <p
+                  className="text-[var(--text-sm)] mt-0.5"
+                  style={{ color: "var(--luma-text-secondary)" }}
+                >
+                  Nothing needs your attention right now.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={prioritizeAgain}
+                className="flex items-center gap-2 px-4 py-2 rounded-[var(--radius-full)]
+                  text-[var(--text-sm)] font-semibold transition-all duration-100
+                  hover:opacity-85 active:scale-[0.97]
+                  focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--luma-blue)]"
+                style={{
+                  background: "var(--luma-glass-raised)",
+                  border:     "1px solid var(--luma-glass-border)",
+                  color:      "var(--luma-text-secondary)",
+                }}
+              >
+                <RefreshCw size={13} strokeWidth={2} aria-hidden="true" />
+                Prioritize Again
+              </button>
+            </div>
           ) : (
             focusTasks.map((task) => (
               <div key={task.id} role="listitem">
@@ -393,6 +492,13 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* ── Done card ────────────────────────────── */}
+      {doneTasks.length > 0 && (
+        <div className="mb-4">
+          <DoneCard tasks={doneTasks} />
+        </div>
+      )}
+
       {/* ── Open category cards ──────────────────── */}
       {CATEGORY_ORDER.filter((cat) => openCategories.has(cat)).map((category) => (
         <div key={category} className="mb-4">
@@ -402,7 +508,7 @@ export default function DashboardPage() {
             icon={CATEGORY_ICON[category]}
             accent={CATEGORY_ACCENT[category]}
             accentBg={CATEGORY_BG[category]}
-            tasks={tasks.filter((t) => t.priority === category)}
+            tasks={activeTasks.filter((t) => t.priority === category)}
             selected={selected}
             onSelect={setSelected}
             onClose={() => closeCategory(category)}

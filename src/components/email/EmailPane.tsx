@@ -11,17 +11,13 @@ import {
   Star,
   Paperclip,
   Download,
-  Bold,
-  Italic,
-  List,
-  Link2,
-  Smile,
   Sparkles,
   ArrowRightLeft,
   CheckCircle2,
 } from "lucide-react";
 import type { Task, TaskPriority } from "@/types/dashboard";
-import { getPillConfig } from "@/components/email/EmailRow";
+import { getPillConfig }    from "@/components/email/EmailRow";
+import { ReplyComposer }    from "@/components/email/ReplyComposer";
 
 /* ─────────────────────────────────────────────
    EmailPane
@@ -442,57 +438,33 @@ export function EmailPane({ task, onClose, onDone, onPriorityChange }: EmailPane
           </div>
         )}
 
-        {/* Reply box — hidden after Done */}
+        {/* Reply composer — hidden after Done */}
         {!isDone && (
-          <div
-            className="rounded-[var(--radius-xl)] overflow-hidden mt-2"
-            style={{
-              border:     "1px solid var(--luma-glass-border)",
-              background: "var(--luma-glass-raised)",
-            }}
-          >
-            <div
-              className="px-4 py-3 text-[var(--text-sm)]"
-              style={{ color: "var(--luma-text-tertiary)", minHeight: "56px" }}
-              role="textbox"
-              aria-label="Write a reply"
-              aria-multiline="true"
-            >
-              Write a reply…
-            </div>
+          <>
+            <ReplyComposer
+              subject={task.subject}
+              body={task.body}
+              sender={task.sender}
+            />
 
-            {/* Formatting toolbar + Done button */}
-            <div
-              className="flex items-center justify-between px-3 py-2"
-              style={{ borderTop: "1px solid var(--luma-glass-border)" }}
+            {/* Done button — kept below the composer */}
+            <button
+              type="button"
+              onClick={handleDone}
+              className="self-end flex items-center gap-2 px-4 py-2 rounded-[var(--radius-full)]
+                text-[var(--text-sm)] font-semibold transition-all duration-100
+                hover:opacity-90 active:scale-[0.98]
+                focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--luma-blue)]"
+              style={{
+                background: "rgba(22,163,74,0.12)",
+                color:      "rgb(22,163,74)",
+                border:     "1px solid rgba(22,163,74,0.25)",
+              }}
             >
-              <div className="flex items-center gap-1" style={{ color: "var(--luma-text-tertiary)" }}>
-                <ToolbarBtn label="Attachment"><Paperclip size={15} strokeWidth={1.5} aria-hidden="true" /></ToolbarBtn>
-                <ToolbarBtn label="Bold"><Bold      size={15} strokeWidth={1.5} aria-hidden="true" /></ToolbarBtn>
-                <ToolbarBtn label="Italic"><Italic    size={15} strokeWidth={1.5} aria-hidden="true" /></ToolbarBtn>
-                <ToolbarBtn label="List"><List      size={15} strokeWidth={1.5} aria-hidden="true" /></ToolbarBtn>
-                <ToolbarBtn label="Link"><Link2     size={15} strokeWidth={1.5} aria-hidden="true" /></ToolbarBtn>
-                <ToolbarBtn label="Emoji"><Smile     size={15} strokeWidth={1.5} aria-hidden="true" /></ToolbarBtn>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleDone}
-                className="flex items-center gap-2 px-4 py-2 rounded-[var(--radius-full)]
-                  text-[var(--text-sm)] font-semibold transition-all duration-100
-                  hover:opacity-90 active:scale-[0.98]
-                  focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--luma-blue)]"
-                style={{
-                  background: "rgba(22,163,74,0.12)",
-                  color:      "rgb(22,163,74)",
-                  border:     "1px solid rgba(22,163,74,0.25)",
-                }}
-              >
-                <CheckCircle2 size={14} strokeWidth={1.5} aria-hidden="true" />
-                Done
-              </button>
-            </div>
-          </div>
+              <CheckCircle2 size={14} strokeWidth={1.5} aria-hidden="true" />
+              Done
+            </button>
+          </>
         )}
 
       </div>
