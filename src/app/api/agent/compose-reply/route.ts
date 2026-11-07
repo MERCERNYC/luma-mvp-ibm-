@@ -77,7 +77,8 @@ async function watsonxDraft(req: ComposeReplyRequest): Promise<string> {
 
   const prompt = [
     "You are a professional email assistant. Write a polished, concise reply to the following email.",
-    "",
+    "Use only information provided in the original email and the user's reply intent. Do not invent dates, commitments, names, availability, or other facts.",
+  "",
     `Original email from: ${req.sender}`,
     `Subject: ${req.subject}`,
     `Body:\n${req.body}`,

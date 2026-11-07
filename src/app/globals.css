@@ -136,15 +136,35 @@
   --luma-purple:       #7c3aed;
   --luma-purple-soft:  rgba(124, 58, 237, 0.10);
 
-  /* Email priority semantic colors */
-  --luma-urgent:       #dc2626;
-  --luma-urgent-soft:  rgba(220, 38, 38, 0.09);
-  --luma-action:       #5b6ef5;   /* periwinkle-blue — ACTION pill */
-  --luma-action-soft:  rgba(91, 110, 245, 0.10);
-  --luma-later:        #d97706;   /* warm amber — LATER pill */
-  --luma-later-soft:   rgba(217, 119, 6, 0.10);
-  --luma-news:         #64748b;   /* slate — NEWS pill */
-  --luma-news-soft:    rgba(100, 116, 139, 0.10);
+/* Email priority semantic colors */
+--luma-urgent:       #dc2626;
+--luma-urgent-soft:  rgba(220, 38, 38, 0.09);
+
+/* ACTION NEEDED — soft lavender */
+--luma-action: #8B5CF6;
+--luma-action-soft: rgba(219, 198, 255, 0.32);
+background: linear-gradient(
+  135deg,
+  rgba(235, 218, 255, 0.55),
+  rgba(255, 255, 255, 0.70)
+);
+
+/* FOR LATER — soft warm cream */
+--luma-later:       #efb154;
+--luma-later-soft:  rgba(255, 230, 190, 0.45);
+background: linear-gradient(
+  135deg,
+  rgba(255, 235, 204, 0.58),
+  rgba(255, 255, 255, 0.72)
+);
+
+/* NEWS & UPDATES — soft baby blue */
+--luma-news: #3B82F6;
+--luma-news-soft: rgba(196, 222, 255, 0.38);
+background: linear-gradient(
+  135deg,
+  rgba(211, 232, 255, 0.60),
+  rgba(255, 255, 255, 0.70)
 }
 
 /* ─────────────────────────────────────────────
