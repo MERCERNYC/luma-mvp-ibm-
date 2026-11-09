@@ -48,8 +48,13 @@ export interface Task {
   subject: string;
   /** Short preview shown in the list row (~60 chars) */
   preview: string;
-  /** Full body — shown in the reading pane */
+  /** Clean plain-text body — used by watsonx/LUMA v7 and as fallback display */
   body: string;
+  /**
+   * Sanitized HTML body — used by the reading pane when available.
+   * Absent for plain-text-only emails and dataset entries.
+   */
+  displayBody?: string;
   /** Displayed time string e.g. "9:24 AM" */
   time: string;
   /**

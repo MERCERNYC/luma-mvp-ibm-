@@ -1,12 +1,16 @@
 "use client";
 
-import { useState, useCallback }  from "react";
-import { Target, ChevronDown, ChevronUp } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import { Target, ChevronDown, ChevronUp, Sparkles, RefreshCw } from "lucide-react";
 import { AppShell }               from "@/components/layout/AppShell";
 import { EmailRow }               from "@/components/email/EmailRow";
 import { EmailPane }              from "@/components/email/EmailPane";
+import { DoneCard }               from "@/components/email/DoneCard";
+import { WelcomePage }            from "@/components/WelcomePage";
 import { GREETING_NAME }          from "@/data/dashboard";
-import { useClassifiedEmails, FOCUS_LIMIT } from "@/hooks/useClassifiedEmails";
+import { useClassifiedEmails }    from "@/hooks/useClassifiedEmails";
+import { useDoneEmails }          from "@/hooks/useDoneEmails";
+import { useFocusQueue }          from "@/hooks/useFocusQueue";
 import { useFeedback }            from "@/hooks/useFeedback";
 import type { Task, TaskPriority } from "@/types/dashboard";
 
@@ -44,18 +48,17 @@ function SkeletonRow() {
 // ── Summary tile ────────────────────────────
 
 interface SummaryCardProps {
-  icon:        React.ReactNode;
-  label:       string;
-  count:       number;
-  description: string;
-  accent:      string;
-  accentBg:    string;
-  isOpen:      boolean;
-  onClick:     () => void;
+  icon:     React.ReactNode;
+  label:    string;
+  count:    number;
+  accent:   string;
+  accentBg: string;
+  isOpen:   boolean;
+  onClick:  () => void;
 }
 
 function SummaryCard({
-  icon, label, count, description, accent, accentBg, isOpen, onClick,
+  icon, label, count, accent, accentBg, isOpen, onClick,
 }: SummaryCardProps) {
   return (
     <button
@@ -63,41 +66,57 @@ function SummaryCard({
       onClick={onClick}
       aria-pressed={isOpen}
       aria-label={`${label}: ${count} emails`}
-      className="flex-1 rounded-[var(--radius-2xl)] px-5 py-4 flex items-center gap-4 text-left
+      className="flex-1 rounded-[var(--radius-xl)] px-4 py-2.5 flex items-center gap-3 text-left
         transition-all duration-150 focus-visible:outline focus-visible:outline-2
         focus-visible:outline-[var(--luma-blue)] focus-visible:outline-offset-2"
       style={{
-        background: accentBg,
+        background: isOpen ? accentBg : "rgba(255,255,255,0.28)",
         border:     isOpen
-          ? `2px solid ${accent}`
+          ? `1.5px solid ${accent}55`
           : "1px solid var(--luma-glass-border)",
-        boxShadow:  isOpen ? `0 0 0 3px ${accent}22` : undefined,
-        cursor:     "pointer",
+        cursor: "pointer",
       }}
     >
-      <div
-        className="shrink-0 w-10 h-10 rounded-[var(--radius-xl)] flex items-center justify-center"
-        style={{ background: accent + "22" }}
+      {/* Icon */}
+      <span
+        style={{ fontSize: 14, lineHeight: 1, opacity: isOpen ? 1 : 0.7, flexShrink: 0 }}
+        aria-hidden="true"
       >
-        <span style={{ color: accent }}>{icon}</span>
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-[var(--text-xs)] font-medium" style={{ color: "var(--luma-text-secondary)" }}>
-          {label}
-        </p>
-        <p className="text-[2rem] font-bold leading-none mt-0.5" style={{ color: "var(--luma-text-primary)" }}>
-          {count}
-        </p>
-        <p className="text-[var(--text-xs)] mt-0.5" style={{ color: "var(--luma-text-tertiary)" }}>
-          {description}
-        </p>
-      </div>
-      {/* Open/close chevron */}
-      <div style={{ color: accent, opacity: 0.7, flexShrink: 0 }} aria-hidden="true">
+        {icon}
+      </span>
+
+      {/* Label */}
+      <span
+        className="flex-1 min-w-0 truncate text-[var(--text-xs)] font-medium"
+        style={{ color: isOpen ? "var(--luma-text-primary)" : "var(--luma-text-secondary)" }}
+      >
+        {label}
+      </span>
+
+      {/* Count badge */}
+      <span
+        className="text-[var(--text-2xs)] font-semibold px-1.5 py-0.5 rounded-[var(--radius-full)] shrink-0"
+        style={{
+          background: isOpen ? `${accent}20` : "rgba(100,140,200,0.12)",
+          color:      isOpen ? accent         : "var(--luma-text-tertiary)",
+        }}
+      >
+        {count}
+      </span>
+
+      {/* Chevron */}
+      <span
+        style={{
+          color:     isOpen ? accent : "var(--luma-text-disabled)",
+          flexShrink: 0,
+          lineHeight: 1,
+        }}
+        aria-hidden="true"
+      >
         {isOpen
-          ? <ChevronUp   size={16} strokeWidth={2} />
-          : <ChevronDown size={16} strokeWidth={2} />}
-      </div>
+          ? <ChevronUp   size={13} strokeWidth={2} />
+          : <ChevronDown size={13} strokeWidth={2} />}
+      </span>
     </button>
   );
 }
@@ -200,7 +219,7 @@ function CategoryCard({
 const CATEGORY_LABEL: Record<TaskPriority, string> = {
   "action-needed": "Action Needed",
   "for-later":     "For Later",
-  "news-updates":  "News & Updates",
+  "news-updates":  "FYI",
 };
 
 const CATEGORY_ICON: Record<TaskPriority, string> = {
@@ -227,34 +246,72 @@ const CATEGORY_ORDER: TaskPriority[] = ["action-needed", "for-later", "news-upda
 // ── Page ─────────────────────────────────────
 
 export default function DashboardPage() {
-  const { status, tasks: agentTasks } = useClassifiedEmails();
+  // ── Gmail connection gate ───────────────────────────────────
+  // "checking" = haven't fetched status yet (avoids flash of dashboard)
+  // "welcome"  = not connected — show welcome page
+  // "dashboard" = connected or user chose demo — show dashboard
+  const [gate, setGate] = useState<"checking" | "welcome" | "dashboard">("checking");
+
+  useEffect(() => {
+    fetch("/api/auth/gmail/status")
+      .then((r) => r.json())
+      .then((data: { connected: boolean }) => {
+        setGate(data.connected ? "dashboard" : "welcome");
+      })
+      .catch(() => {
+        setGate("welcome");
+      });
+  }, []);
+
+  // ── Dashboard state (all hooks must be unconditional) ───────
+  const { status, tasks: agentTasks, emailSource } = useClassifiedEmails();
   const { recordCorrection }          = useFeedback();
+  const {
+    doneIds,
+    markDone,
+    generation,
+    prioritizeAgain,
+  } = useDoneEmails();
 
-  const [showAll,        setShowAll]        = useState(false);
+  const [gmailError,     setGmailError]     = useState<string | null>(null);
   const [selected,       setSelected]       = useState<Task | null>(null);
-  // Set of open category panels — multiple can be open simultaneously
   const [openCategories, setOpenCategories] = useState<Set<TaskPriority>>(new Set());
-  // Priority overrides Sofia has applied this session — keyed by task id
-  const [overrides, setOverrides] = useState<Record<string, TaskPriority>>({});
-  // IDs of emails Sofia has marked as Done — filtered out of all lists
-  const [doneIds, setDoneIds] = useState<Set<string>>(new Set());
+  const [overrides,      setOverrides]      = useState<Record<string, TaskPriority>>({});
 
-  // Merge agent tasks with any session overrides, then strip done items
-  const tasks = agentTasks
-    .map((t) => overrides[t.id] ? { ...t, priority: overrides[t.id] } : t)
-    .filter((t) => !doneIds.has(t.id));
+  // ── Gmail OAuth error banner ────────────────────────────────
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const err    = params.get("gmail_error");
+    if (err) {
+      setGmailError(decodeURIComponent(err));
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
 
-  const actionCount = tasks.filter((t) => t.priority === "action-needed").length;
-  const laterCount  = tasks.filter((t) => t.priority === "for-later").length;
-  const newsCount   = tasks.filter((t) => t.priority === "news-updates").length;
+  // ── Derived state (computed before any conditional return) ───
+  const allTasks = agentTasks.map((t) =>
+    overrides[t.id] ? { ...t, priority: overrides[t.id] } : t,
+  );
 
-  // Keep selected in sync with overrides; clear if the task was marked done
+  const { focusTasks, activeTasks, isCaughtUp, windowSize } = useFocusQueue(
+    allTasks,
+    doneIds,
+    generation,
+    status === "ready",
+  );
+
+  const doneTasks = [...doneIds]
+    .reverse()
+    .map((id) => allTasks.find((t) => t.id === id))
+    .filter((t): t is Task => t !== undefined);
+
+  const actionCount = activeTasks.filter((t) => t.priority === "action-needed").length;
+  const laterCount  = activeTasks.filter((t) => t.priority === "for-later").length;
+  const newsCount   = activeTasks.filter((t) => t.priority === "news-updates").length;
+
   const activeTask = selected
-    ? (tasks.find((t) => t.id === selected.id) ?? null)
+    ? (activeTasks.find((t) => t.id === selected.id) ?? null)
     : null;
-
-  const focusCount = Math.min(tasks.length, FOCUS_LIMIT);
-  const focusTasks = showAll ? tasks : tasks.slice(0, FOCUS_LIMIT);
 
   const handlePriorityChange = useCallback(
     (taskId: string, lumaOriginal: TaskPriority, sofiaChanged: TaskPriority) => {
@@ -265,17 +322,27 @@ export default function DashboardPage() {
   );
 
   const handleDone = useCallback((taskId: string) => {
-    setDoneIds((prev) => { const next = new Set(prev); next.add(taskId); return next; });
-  }, []);
+    markDone(taskId);
+    setSelected((prev) => (prev?.id === taskId ? null : prev));
+  }, [markDone]);
+
+  // ── Route: checking / welcome (all hooks are above this) ────
+  if (gate === "checking") {
+    return null;
+  }
+
+  if (gate === "welcome") {
+    return (
+      <WelcomePage
+        onDemo={() => setGate("dashboard")}
+      />
+    );
+  }
 
   function toggleCategory(category: TaskPriority) {
     setOpenCategories((prev) => {
       const next = new Set(prev);
-      if (next.has(category)) {
-        next.delete(category);
-      } else {
-        next.add(category);
-      }
+      next.has(category) ? next.delete(category) : next.add(category);
       return next;
     });
   }
@@ -303,6 +370,32 @@ export default function DashboardPage() {
           : null
       }
     >
+      {/* ── Gmail error banner ───────────────────── */}
+      {gmailError && (
+        <div
+          role="alert"
+          className="flex items-center justify-between gap-3 px-5 py-3 rounded-[var(--radius-xl)] mb-4 text-[var(--text-sm)]"
+          style={{
+            background: "rgba(220,38,38,0.07)",
+            border:     "1px solid rgba(220,38,38,0.25)",
+            color:      "#b91c1c",
+          }}
+        >
+          <span>
+            <strong>Gmail connection failed</strong>
+            {" — "}{gmailError.replace(/_/g, " ")}
+          </span>
+          <button
+            type="button"
+            aria-label="Dismiss error"
+            onClick={() => setGmailError(null)}
+            className="shrink-0 font-bold opacity-70 hover:opacity-100 transition-opacity"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* ── Greeting ─────────────────────────────── */}
       <div
         className="glass rounded-[var(--radius-2xl)] px-6 py-5 mb-4"
@@ -322,9 +415,11 @@ export default function DashboardPage() {
             ? "Checking your inbox…"
             : status === "error"
               ? "Couldn't load emails right now."
-              : `${focusCount} thing${focusCount === 1 ? "" : "s"} need your attention today.`}
+              : isCaughtUp
+                ? "You're all caught up!"
+                : `${focusTasks.length} thing${focusTasks.length === 1 ? "" : "s"} need your attention today.`}
         </p>
-        {status === "ready" && (
+        {status === "ready" && !isCaughtUp && (
           <p
             className="mt-0.5 text-[var(--text-sm)]"
             style={{ color: "var(--luma-text-tertiary)" }}
@@ -349,19 +444,19 @@ export default function DashboardPage() {
             >
               Focus Now
             </h2>
+            {/* Progress indicator — counts down as tasks are completed */}
+            {status === "ready" && windowSize > 0 && !isCaughtUp && (
+              <span
+                className="text-[var(--text-xs)] tabular-nums"
+                style={{ color: "var(--luma-text-tertiary)" }}
+              >
+                {focusTasks.length} of {windowSize} left
+              </span>
+            )}
           </div>
-          {status === "ready" && tasks.length > FOCUS_LIMIT && (
-            <button
-              onClick={() => setShowAll((v) => !v)}
-              className="text-[var(--text-sm)] font-medium"
-              style={{ color: "var(--luma-blue)" }}
-            >
-              {showAll ? "Show less" : `See all (${tasks.length}) →`}
-            </button>
-          )}
         </div>
 
-        {/* Email rows */}
+        {/* Email rows / empty states */}
         <div
           role="list"
           aria-label="Focus Now emails"
@@ -379,6 +474,51 @@ export default function DashboardPage() {
             <p className="px-5 py-6 text-[var(--text-sm)]" style={{ color: "var(--luma-text-tertiary)" }}>
               Something went wrong. Please refresh the page.
             </p>
+          ) : isCaughtUp ? (
+            /* ── Caught-up empty state ── */
+            <div
+              className="flex flex-col items-center gap-3 px-6 py-8 text-center"
+              role="status"
+              aria-live="polite"
+            >
+              <div
+                className="w-12 h-12 rounded-[var(--radius-full)] flex items-center justify-center"
+                style={{ background: "rgba(124,92,216,0.10)" }}
+                aria-hidden="true"
+              >
+                <Sparkles size={22} strokeWidth={1.5} style={{ color: "var(--luma-purple, #7c5cd8)" }} />
+              </div>
+              <div>
+                <p
+                  className="text-[var(--text-base)] font-bold"
+                  style={{ color: "var(--luma-text-primary)" }}
+                >
+                  You&rsquo;re caught up
+                </p>
+                <p
+                  className="text-[var(--text-sm)] mt-0.5"
+                  style={{ color: "var(--luma-text-secondary)" }}
+                >
+                  Nothing needs your attention right now.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={prioritizeAgain}
+                className="flex items-center gap-2 px-4 py-2 rounded-[var(--radius-full)]
+                  text-[var(--text-sm)] font-semibold transition-all duration-100
+                  hover:opacity-85 active:scale-[0.97]
+                  focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--luma-blue)]"
+                style={{
+                  background: "var(--luma-glass-raised)",
+                  border:     "1px solid var(--luma-glass-border)",
+                  color:      "var(--luma-text-secondary)",
+                }}
+              >
+                <RefreshCw size={13} strokeWidth={2} aria-hidden="true" />
+                Prioritize Again
+              </button>
+            </div>
           ) : (
             focusTasks.map((task) => (
               <div key={task.id} role="listitem">
@@ -393,6 +533,13 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* ── Done card ────────────────────────────── */}
+      {doneTasks.length > 0 && (
+        <div className="mb-4">
+          <DoneCard tasks={doneTasks} />
+        </div>
+      )}
+
       {/* ── Open category cards ──────────────────── */}
       {CATEGORY_ORDER.filter((cat) => openCategories.has(cat)).map((category) => (
         <div key={category} className="mb-4">
@@ -402,7 +549,7 @@ export default function DashboardPage() {
             icon={CATEGORY_ICON[category]}
             accent={CATEGORY_ACCENT[category]}
             accentBg={CATEGORY_BG[category]}
-            tasks={tasks.filter((t) => t.priority === category)}
+            tasks={activeTasks.filter((t) => t.priority === category)}
             selected={selected}
             onSelect={setSelected}
             onClose={() => closeCategory(category)}
@@ -413,30 +560,27 @@ export default function DashboardPage() {
       {/* ── Summary tiles ────────────────────────── */}
       <div className="flex gap-3">
         <SummaryCard
-          icon={<span style={{ fontSize: 18 }}>✉️</span>}
+          icon={<span style={{ fontSize: 14 }}>✉️</span>}
           label="Action Needed"
           count={status === "ready" ? actionCount : 0}
-          description="Requires a reply or decision"
           accent="var(--luma-action)"
           accentBg="var(--luma-action-soft)"
           isOpen={openCategories.has("action-needed")}
           onClick={() => toggleCategory("action-needed")}
         />
         <SummaryCard
-          icon={<span style={{ fontSize: 18 }}>🕐</span>}
+          icon={<span style={{ fontSize: 14 }}>🕐</span>}
           label="For Later"
           count={status === "ready" ? laterCount : 0}
-          description="Keep on your radar"
           accent="var(--luma-later)"
           accentBg="var(--luma-later-soft)"
           isOpen={openCategories.has("for-later")}
           onClick={() => toggleCategory("for-later")}
         />
         <SummaryCard
-          icon={<span style={{ fontSize: 18 }}>📰</span>}
-          label="News & Updates"
+          icon={<span style={{ fontSize: 14 }}>📰</span>}
+          label="FYI"
           count={status === "ready" ? newsCount : 0}
-          description="FYI and newsletters"
           accent="var(--luma-blue)"
           accentBg="var(--luma-blue-soft)"
           isOpen={openCategories.has("news-updates")}
@@ -450,8 +594,8 @@ export default function DashboardPage() {
         style={{ color: "var(--luma-text-tertiary)" }}
       >
         {status === "ready"
-          ? "Sorted by urgency · action-needed → for-later → news-updates · Sample emails"
-          : "Sorting by urgency · Sample emails"}
+          ? `Sorted by urgency · Action Needed → For Later → FYI · ${emailSource === "gmail" ? "Gmail inbox" : "Sample emails"}`
+          : "Sorting by urgency…"}
       </p>
     </AppShell>
   );
