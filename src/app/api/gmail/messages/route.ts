@@ -13,7 +13,11 @@
      maxResults — number of messages to fetch (default 20, max 50)
 
    Response (200):
-     { emails: ClassifyInput[] }
+     {
+       emails:      ClassifyInput[]  — normalised for the classify pipeline
+       receivedAts: number[]         — parallel array of Unix-ms timestamps
+                                       (from internalDate); index matches emails[]
+     }
 
    Error responses:
      401 — not authenticated (redirect client to /api/auth/gmail)
@@ -125,10 +129,11 @@ export async function GET(request: NextRequest) {
       ),
     );
 
-    // 3. Normalize to ClassifyInput[]
-    const emails = messageResponses.map(gmailMessageToClassifyInput);
+    // 3. Normalize to ClassifyInput[] + extract receivedAt timestamps
+    const emails      = messageResponses.map(gmailMessageToClassifyInput);
+    const receivedAts = messageResponses.map((m) => Number(m.internalDate) || Date.now());
 
-    return NextResponse.json({ emails });
+    return NextResponse.json({ emails, receivedAts });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unexpected error.";
     console.error("[gmail/messages]", message);

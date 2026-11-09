@@ -141,30 +141,16 @@
 --luma-urgent-soft:  rgba(220, 38, 38, 0.09);
 
 /* ACTION NEEDED — soft lavender */
---luma-action: #8B5CF6;
+--luma-action:      #8B5CF6;
 --luma-action-soft: rgba(219, 198, 255, 0.32);
-background: linear-gradient(
-  135deg,
-  rgba(235, 218, 255, 0.55),
-  rgba(255, 255, 255, 0.70)
-);
 
 /* FOR LATER — soft warm cream */
 --luma-later:       #efb154;
 --luma-later-soft:  rgba(255, 230, 190, 0.45);
-background: linear-gradient(
-  135deg,
-  rgba(255, 235, 204, 0.58),
-  rgba(255, 255, 255, 0.72)
-);
 
 /* NEWS & UPDATES — soft baby blue */
---luma-news: #3B82F6;
---luma-news-soft: rgba(196, 222, 255, 0.38);
-background: linear-gradient(
-  135deg,
-  rgba(211, 232, 255, 0.60),
-  rgba(255, 255, 255, 0.70)
+--luma-news:        #3B82F6;
+--luma-news-soft:   rgba(196, 222, 255, 0.38);
 }
 
 /* ─────────────────────────────────────────────
@@ -310,4 +296,84 @@ body {
 }
 .luma-toggle-track[data-checked="true"] .luma-toggle-thumb {
   transform: translateX(16px);
+}
+
+/* ─────────────────────────────────────────────
+   luma-email-html — scoped styles for sanitized
+   Gmail HTML rendered in the reading pane.
+   All rules are scoped under .luma-email-html
+   so they cannot bleed into the LUMA shell.
+   ───────────────────────────────────────────── */
+.luma-email-html {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--luma-text-primary);
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Images — never overflow the pane */
+.luma-email-html img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Links — LUMA blue, open in new tab (enforced by sanitizer) */
+.luma-email-html a {
+  color: var(--luma-blue);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.luma-email-html a:hover { opacity: 0.75; }
+
+/* Tables — common in marketing emails */
+.luma-email-html table {
+  border-collapse: collapse;
+  max-width: 100%;
+  width: 100%;
+}
+.luma-email-html td,
+.luma-email-html th {
+  vertical-align: top;
+  padding: 4px 6px;
+}
+
+/* Headings — scale down from email-sized to pane-sized */
+.luma-email-html h1 { font-size: var(--text-xl);  font-weight: 700; margin: 0.75em 0 0.25em; }
+.luma-email-html h2 { font-size: var(--text-lg);  font-weight: 600; margin: 0.65em 0 0.2em;  }
+.luma-email-html h3 { font-size: var(--text-md);  font-weight: 600; margin: 0.5em  0 0.15em; }
+.luma-email-html h4,
+.luma-email-html h5,
+.luma-email-html h6 { font-size: var(--text-sm);  font-weight: 600; margin: 0.4em  0 0.1em;  }
+
+/* Paragraphs and block spacing */
+.luma-email-html p  { margin: 0 0 0.6em; }
+.luma-email-html ul,
+.luma-email-html ol { margin: 0 0 0.6em 1.4em; padding: 0; }
+.luma-email-html li { margin-bottom: 0.2em; }
+.luma-email-html blockquote {
+  margin: 0.5em 0 0.5em 1em;
+  padding-left: 0.75em;
+  border-left: 3px solid var(--luma-glass-border);
+  color: var(--luma-text-secondary);
+}
+.luma-email-html hr {
+  border: none;
+  border-top: 1px solid var(--luma-glass-border);
+  margin: 1em 0;
+}
+.luma-email-html pre,
+.luma-email-html code {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  background: rgba(37,99,235,0.05);
+  border-radius: var(--radius-xs);
+  padding: 0.1em 0.3em;
+}
+.luma-email-html pre {
+  padding: 0.75em 1em;
+  overflow-x: auto;
+  white-space: pre-wrap;
 }

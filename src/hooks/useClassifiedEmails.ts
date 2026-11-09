@@ -6,18 +6,30 @@
    Drives the classification pipeline by calling the server-side
    API routes — never imports from services/agent directly.
 
+   Email source (V2)
+   ─────────────────
+   1. Try GET /api/gmail/messages (requires gmail_tokens cookie).
+      → 200: use real inbox emails.
+      → 401: not connected — fall back to the evaluation dataset.
+      → other error: fall back to the evaluation dataset.
+   2. If Gmail is unavailable for any reason, the 50-email
+      evaluation dataset is used silently.  No error is shown.
+
    Data flow
    ─────────
-   1. POST /api/agent/classify   { emails: ClassifyInput[] }
-        → ClassifyResult[] (priority per email)
-   2. POST /api/agent/daily-brief { emails[], userName }
-        → { text: string }
+   source emails (Gmail or dataset)
+     → POST /api/agent/classify   { emails: ClassifyInput[] }
+          → ClassifyResult[] (priority per email)
+     → POST /api/agent/daily-brief { emails[], userName }
+          → { text: string }
 
    Returns
    ───────
-   status     "loading" | "ready" | "error"
-   tasks      Task[]  — agent-assigned priority; empty while loading
-   briefText  string  — agent-generated brief; empty while loading
+   status      "loading" | "ready" | "error"
+   tasks       Task[]  — agent-assigned priority; empty while loading
+   urgencies   UrgencyMap
+   briefText   string
+   emailSource "gmail" | "dataset"  — which source was used
 
    Swap story
    ──────────
@@ -30,11 +42,9 @@ import { useEffect, useState }        from "react";
 import { toClassifyInput }            from "@/types/email";
 import { GREETING_NAME }              from "@/data/dashboard";
 import { WATSON_EVAL_EMAILS, evalEmailsToTasks } from "@/data/emailEvaluationDataset";
+import { classifyInputToTask }        from "@/services/gmail/classifyInputToTask";
 import type { Task, TaskPriority }    from "@/types/dashboard";
-import type { ClassifyResult, DailyBriefResult } from "@/services/agent/types";
-
-// The live inbox — 50 emails from the v7-validated evaluation dataset.
-const INBOX = evalEmailsToTasks(WATSON_EVAL_EMAILS);
+import type { ClassifyInput, ClassifyResult, DailyBriefResult } from "@/services/agent/types";
 
 // ─── Sort helpers ────────────────────────────────────────────────
 
@@ -64,45 +74,107 @@ function sortByPriority(
       const rankDiff =
         PRIORITY_RANK[a.task.priority] - PRIORITY_RANK[b.task.priority];
       if (rankDiff !== 0) return rankDiff;
-      // Same bucket — urgencyScore descending
       const urgencyDiff = b.result.urgencyScore - a.result.urgencyScore;
       if (urgencyDiff !== 0) return urgencyDiff;
-      // Same urgency — most recently received first
       return b.task.receivedAt - a.task.receivedAt;
     })
     .map(({ task }) => task);
 }
 
+// ─── Types ───────────────────────────────────────────────────────
+
 export type ClassificationStatus = "loading" | "ready" | "error";
+export type EmailSource          = "gmail" | "dataset";
 
 /** urgencyScore keyed by task id — used by the page to drive pill labels. */
 export type UrgencyMap = Record<string, number>;
 
 export interface UseClassifiedEmailsResult {
-  status:     ClassificationStatus;
-  tasks:      Task[];
-  urgencies:  UrgencyMap;
-  briefText:  string;
+  status:      ClassificationStatus;
+  tasks:       Task[];
+  urgencies:   UrgencyMap;
+  briefText:   string;
+  emailSource: EmailSource;
 }
 
+// ─── Gmail fetch helper ──────────────────────────────────────────
+
+interface GmailMessagesResponse {
+  emails:      ClassifyInput[];
+  receivedAts: number[];
+}
+
+/**
+ * Try to fetch inbox emails via the Gmail route.
+ * Returns null if the user is not authenticated (401) or if the
+ * fetch fails for any reason — caller falls back to the dataset.
+ */
+async function fetchGmailEmails(): Promise<{
+  inputs: ClassifyInput[];
+  inbox:  Task[];
+} | null> {
+  try {
+    const res = await fetch("/api/gmail/messages?maxResults=50");
+
+    // 401 = not connected — silent fallback, not an error
+    if (res.status === 401) return null;
+    if (!res.ok)            return null;
+
+    const data = await res.json() as GmailMessagesResponse;
+
+    if (!Array.isArray(data.emails) || data.emails.length === 0) return null;
+
+    const receivedAts = Array.isArray(data.receivedAts)
+      ? data.receivedAts
+      : data.emails.map(() => Date.now());
+
+    const inbox = data.emails.map((input, i) =>
+      classifyInputToTask(input, i, receivedAts[i] ?? Date.now()),
+    );
+
+    return { inputs: data.emails, inbox };
+  } catch {
+    return null;
+  }
+}
+
+// ─── Hook ────────────────────────────────────────────────────────
+
 export function useClassifiedEmails(): UseClassifiedEmailsResult {
-  const [status,    setStatus]    = useState<ClassificationStatus>("loading");
-  const [tasks,     setTasks]     = useState<Task[]>([]);
-  const [urgencies, setUrgencies] = useState<UrgencyMap>({});
-  const [briefText, setBriefText] = useState("");
+  const [status,      setStatus]      = useState<ClassificationStatus>("loading");
+  const [tasks,       setTasks]       = useState<Task[]>([]);
+  const [urgencies,   setUrgencies]   = useState<UrgencyMap>({});
+  const [briefText,   setBriefText]   = useState("");
+  const [emailSource, setEmailSource] = useState<EmailSource>("dataset");
 
   useEffect(() => {
     let cancelled = false;
 
     async function run() {
       try {
-        // 1. Classify all emails via the API route (server runs the agent).
+        // ── 1. Resolve email source ───────────────────────────────
+        let classifyInputs: ClassifyInput[];
+        let inbox:          Task[];
+        let source:         EmailSource;
+
+        const gmail = await fetchGmailEmails();
+
+        if (gmail) {
+          classifyInputs = gmail.inputs;
+          inbox          = gmail.inbox;
+          source         = "gmail";
+        } else {
+          // Fall back to the 50-email evaluation dataset
+          classifyInputs = WATSON_EVAL_EMAILS.map(toClassifyInput);
+          inbox          = evalEmailsToTasks(WATSON_EVAL_EMAILS);
+          source         = "dataset";
+        }
+
+        // ── 2. Classify all emails via the API route ──────────────
         const classifyResponse = await fetch("/api/agent/classify", {
           method:  "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            emails: WATSON_EVAL_EMAILS.map(toClassifyInput),
-          }),
+          body:    JSON.stringify({ emails: classifyInputs }),
         });
 
         if (!classifyResponse.ok) throw new Error("classify request failed");
@@ -112,8 +184,8 @@ export function useClassifiedEmails(): UseClassifiedEmailsResult {
 
         if (cancelled) return;
 
-        // 2. Merge agent priorities + insight fields back onto Task objects.
-        const mergedTasks: Task[] = INBOX.map((task, i) => ({
+        // ── 3. Merge agent results back onto Task objects ─────────
+        const mergedTasks: Task[] = inbox.map((task, i) => ({
           ...task,
           priority:          results[i].priority,
           reason:            results[i].reason,
@@ -121,17 +193,16 @@ export function useClassifiedEmails(): UseClassifiedEmailsResult {
           urgencyScore:      results[i].urgencyScore,
         }));
 
-        // 3. Sort: bucket rank → urgencyScore desc → receivedAt desc.
-        //    Overdue/expired items (urgencyScore 0.4) sink below live deadlines.
+        // ── 4. Sort: bucket → urgencyScore desc → receivedAt desc ─
         const classifiedTasks = sortByPriority(mergedTasks, results);
 
-        // Build urgencyScore lookup keyed by task id (preserves score after sort).
+        // Build urgencyScore lookup keyed by task id
         const urgencyMap: UrgencyMap = {};
-        INBOX.forEach((task, i) => {
+        inbox.forEach((task, i) => {
           urgencyMap[task.id] = results[i].urgencyScore;
         });
 
-        // 4. Generate the daily brief via the API route.
+        // ── 5. Generate the daily brief ───────────────────────────
         const briefResponse = await fetch("/api/agent/daily-brief", {
           method:  "POST",
           headers: { "Content-Type": "application/json" },
@@ -154,6 +225,7 @@ export function useClassifiedEmails(): UseClassifiedEmailsResult {
         setTasks(classifiedTasks);
         setUrgencies(urgencyMap);
         setBriefText(text);
+        setEmailSource(source);
         setStatus("ready");
       } catch {
         if (!cancelled) setStatus("error");
@@ -164,5 +236,5 @@ export function useClassifiedEmails(): UseClassifiedEmailsResult {
     return () => { cancelled = true; };
   }, []); // runs once on mount
 
-  return { status, tasks, urgencies, briefText };
+  return { status, tasks, urgencies, briefText, emailSource };
 }

@@ -18,9 +18,9 @@
    ───────────────────────────────────────────────────────────────── */
 
 import { useEffect, useState, useCallback } from "react";
-import { X, Mail, CheckCircle2, Loader2 }   from "lucide-react";
+import { X, Mail, CheckCircle2, Loader2, LogOut } from "lucide-react";
 
-type GmailStatus = "checking" | "connected" | "disconnected";
+type GmailStatus = "checking" | "connected" | "disconnected" | "disconnecting";
 
 interface PreferencesModalProps {
   onClose: () => void;
@@ -38,6 +38,17 @@ export function PreferencesModal({ onClose }: PreferencesModalProps) {
       setGmailStatus(connected ? "connected" : "disconnected");
     } catch {
       setGmailStatus("disconnected");
+    }
+  }, []);
+
+  // Clear the gmail_tokens cookie server-side — no Gmail data is touched.
+  const handleDisconnect = useCallback(async () => {
+    setGmailStatus("disconnecting");
+    try {
+      await fetch("/api/auth/gmail/disconnect", { method: "POST" });
+    } finally {
+      // Reload so the gate re-evaluates and the welcome page shows.
+      window.location.href = "/";
     }
   }, []);
 
@@ -136,35 +147,60 @@ export function PreferencesModal({ onClose }: PreferencesModalProps) {
               </div>
             )}
 
-            {gmailStatus === "connected" && (
-              <div
-                className="flex items-center gap-2.5 px-3 py-2.5 rounded-[var(--radius-xl)]"
-                style={{
-                  background: "rgba(22,163,74,0.08)",
-                  border:     "1px solid rgba(22,163,74,0.25)",
-                }}
-                aria-live="polite"
-              >
-                <CheckCircle2
-                  size={15}
-                  strokeWidth={1.5}
-                  style={{ color: "#16a34a", flexShrink: 0 }}
-                  aria-hidden="true"
-                />
-                <div className="flex flex-col leading-tight">
-                  <span
-                    className="text-[var(--text-sm)] font-semibold"
-                    style={{ color: "#15803d" }}
-                  >
-                    Gmail Connected
-                  </span>
-                  <span
-                    className="text-[var(--text-xs)] mt-0.5"
-                    style={{ color: "var(--luma-text-tertiary)" }}
-                  >
-                    Read-only · Demo emails active
-                  </span>
+            {(gmailStatus === "connected" || gmailStatus === "disconnecting") && (
+              <div className="flex flex-col gap-2" aria-live="polite">
+                {/* Connected badge */}
+                <div
+                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-[var(--radius-xl)]"
+                  style={{
+                    background: "rgba(22,163,74,0.08)",
+                    border:     "1px solid rgba(22,163,74,0.25)",
+                  }}
+                >
+                  <CheckCircle2
+                    size={15}
+                    strokeWidth={1.5}
+                    style={{ color: "#16a34a", flexShrink: 0 }}
+                    aria-hidden="true"
+                  />
+                  <div className="flex flex-col leading-tight flex-1 min-w-0">
+                    <span
+                      className="text-[var(--text-sm)] font-semibold"
+                      style={{ color: "#15803d" }}
+                    >
+                      Gmail Connected
+                    </span>
+                    <span
+                      className="text-[var(--text-xs)] mt-0.5"
+                      style={{ color: "var(--luma-text-tertiary)" }}
+                    >
+                      Read-only · gmail.readonly
+                    </span>
+                  </div>
                 </div>
+
+                {/* Disconnect button */}
+                <button
+                  type="button"
+                  onClick={handleDisconnect}
+                  disabled={gmailStatus === "disconnecting"}
+                  className="flex items-center justify-center gap-2 px-4 py-2 rounded-[var(--radius-xl)]
+                    text-[var(--text-sm)] font-medium transition-all duration-100
+                    hover:opacity-85 disabled:opacity-50 disabled:pointer-events-none
+                    focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--luma-blue)]"
+                  style={{
+                    background: "rgba(220,38,38,0.07)",
+                    border:     "1px solid rgba(220,38,38,0.20)",
+                    color:      "#b91c1c",
+                  }}
+                >
+                  {gmailStatus === "disconnecting" ? (
+                    <Loader2 size={13} strokeWidth={2} className="animate-spin" aria-hidden="true" />
+                  ) : (
+                    <LogOut size={13} strokeWidth={2} aria-hidden="true" />
+                  )}
+                  {gmailStatus === "disconnecting" ? "Disconnecting…" : "Disconnect Gmail"}
+                </button>
               </div>
             )}
 

@@ -52,8 +52,11 @@ export async function GET() {
     redirect_uri:  redirectUri,
     response_type: "code",
     scope:         SCOPE,
-    access_type:   "offline",   // request a refresh token
-    prompt:        "consent",   // always show consent so we get refresh_token
+    access_type:   "offline",          // request a refresh token
+    // "select_account" forces the Google account chooser every time,
+    // so the user can pick a different account on reconnect.
+    // "consent" ensures a refresh token is always returned.
+    prompt:        "select_account consent",
     state,
   });
 

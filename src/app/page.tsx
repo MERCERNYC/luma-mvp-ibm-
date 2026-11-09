@@ -6,6 +6,7 @@ import { AppShell }               from "@/components/layout/AppShell";
 import { EmailRow }               from "@/components/email/EmailRow";
 import { EmailPane }              from "@/components/email/EmailPane";
 import { DoneCard }               from "@/components/email/DoneCard";
+import { WelcomePage }            from "@/components/WelcomePage";
 import { GREETING_NAME }          from "@/data/dashboard";
 import { useClassifiedEmails }    from "@/hooks/useClassifiedEmails";
 import { useDoneEmails }          from "@/hooks/useDoneEmails";
@@ -230,7 +231,25 @@ const CATEGORY_ORDER: TaskPriority[] = ["action-needed", "for-later", "news-upda
 // ── Page ─────────────────────────────────────
 
 export default function DashboardPage() {
-  const { status, tasks: agentTasks } = useClassifiedEmails();
+  // ── Gmail connection gate ───────────────────────────────────
+  // "checking" = haven't fetched status yet (avoids flash of dashboard)
+  // "welcome"  = not connected — show welcome page
+  // "dashboard" = connected or user chose demo — show dashboard
+  const [gate, setGate] = useState<"checking" | "welcome" | "dashboard">("checking");
+
+  useEffect(() => {
+    fetch("/api/auth/gmail/status")
+      .then((r) => r.json())
+      .then((data: { connected: boolean }) => {
+        setGate(data.connected ? "dashboard" : "welcome");
+      })
+      .catch(() => {
+        setGate("welcome");
+      });
+  }, []);
+
+  // ── Dashboard state (all hooks must be unconditional) ───────
+  const { status, tasks: agentTasks, emailSource } = useClassifiedEmails();
   const { recordCorrection }          = useFeedback();
   const {
     doneIds,
@@ -239,9 +258,12 @@ export default function DashboardPage() {
     prioritizeAgain,
   } = useDoneEmails();
 
-  // ── Gmail OAuth error banner ────────────────────────────────
-  const [gmailError, setGmailError] = useState<string | null>(null);
+  const [gmailError,     setGmailError]     = useState<string | null>(null);
+  const [selected,       setSelected]       = useState<Task | null>(null);
+  const [openCategories, setOpenCategories] = useState<Set<TaskPriority>>(new Set());
+  const [overrides,      setOverrides]      = useState<Record<string, TaskPriority>>({});
 
+  // ── Gmail OAuth error banner ────────────────────────────────
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const err    = params.get("gmail_error");
@@ -251,17 +273,11 @@ export default function DashboardPage() {
     }
   }, []);
 
-  const [selected,       setSelected]       = useState<Task | null>(null);
-  const [openCategories, setOpenCategories] = useState<Set<TaskPriority>>(new Set());
-  // Priority overrides applied this session — keyed by task id
-  const [overrides, setOverrides] = useState<Record<string, TaskPriority>>({});
-
-  // Merge agent priorities with any manual overrides
+  // ── Derived state (computed before any conditional return) ───
   const allTasks = agentTasks.map((t) =>
     overrides[t.id] ? { ...t, priority: overrides[t.id] } : t,
   );
 
-  // Focus Now window + active tasks (both exclude done items)
   const { focusTasks, activeTasks, isCaughtUp } = useFocusQueue(
     allTasks,
     doneIds,
@@ -269,7 +285,6 @@ export default function DashboardPage() {
     status === "ready",
   );
 
-  // Done tasks list — ordered by most recently done (last in set = most recent)
   const doneTasks = [...doneIds]
     .reverse()
     .map((id) => allTasks.find((t) => t.id === id))
@@ -279,7 +294,6 @@ export default function DashboardPage() {
   const laterCount  = activeTasks.filter((t) => t.priority === "for-later").length;
   const newsCount   = activeTasks.filter((t) => t.priority === "news-updates").length;
 
-  // Keep selected task in sync; clear it if marked done
   const activeTask = selected
     ? (activeTasks.find((t) => t.id === selected.id) ?? null)
     : null;
@@ -294,9 +308,21 @@ export default function DashboardPage() {
 
   const handleDone = useCallback((taskId: string) => {
     markDone(taskId);
-    // If the task being marked done is currently open in the pane, close it
     setSelected((prev) => (prev?.id === taskId ? null : prev));
   }, [markDone]);
+
+  // ── Route: checking / welcome (all hooks are above this) ────
+  if (gate === "checking") {
+    return null;
+  }
+
+  if (gate === "welcome") {
+    return (
+      <WelcomePage
+        onDemo={() => setGate("dashboard")}
+      />
+    );
+  }
 
   function toggleCategory(category: TaskPriority) {
     setOpenCategories((prev) => {
@@ -556,8 +582,8 @@ export default function DashboardPage() {
         style={{ color: "var(--luma-text-tertiary)" }}
       >
         {status === "ready"
-          ? "Sorted by urgency · action-needed → for-later → news-updates · Sample emails"
-          : "Sorting by urgency · Sample emails"}
+          ? `Sorted by urgency · action-needed → for-later → news-updates · ${emailSource === "gmail" ? "Gmail inbox" : "Sample emails"}`
+          : "Sorting by urgency…"}
       </p>
     </AppShell>
   );

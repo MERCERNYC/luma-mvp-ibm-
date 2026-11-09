@@ -41,7 +41,18 @@ export interface ClassifyInput {
   id:          string;
   subject:     string;
   preview:     string;
+  /**
+   * Clean plain-text body — all HTML stripped, URLs removed, entities decoded.
+   * Sent to watsonx / LUMA v7 for classification and AI analysis.
+   */
   body:        string;
+  /**
+   * Sanitized HTML body for the reading pane.
+   * Present only when the source email had an HTML part.
+   * Absent for plain-text-only emails and dataset entries.
+   * NEVER sent to watsonx — display only.
+   */
+  displayBody?: string;
   /** Display name, e.g. "Dani (Teacher)" */
   sender:      string;
   /** Raw address, e.g. "dani@lincolnelem.edu" */

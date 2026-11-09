@@ -134,8 +134,7 @@ function CorrectionToast({
 }
 
 export function EmailPane({ task, onClose, onDone, onPriorityChange }: EmailPaneProps) {
-  const bodyParagraphs = task.body.split("\n\n");
-  const moveTarget     = MOVE_TARGET[task.priority];
+  const moveTarget = MOVE_TARGET[task.priority];
 
   /** Toast state — tracks the last correction for display */
   const [toast, setToast] = useState<{
@@ -250,18 +249,29 @@ export function EmailPane({ task, onClose, onDone, onPriorityChange }: EmailPane
           {task.subject}
         </h1>
 
-        {/* Body */}
-        <div className="flex flex-col gap-3">
-          {bodyParagraphs.map((para, i) => (
-            <p
-              key={i}
-              className="text-[var(--text-sm)] leading-[var(--leading-relaxed)]"
-              style={{ color: "var(--luma-text-primary)" }}
-            >
-              {para}
-            </p>
-          ))}
-        </div>
+        {/* Body — HTML render when available, plain-text fallback */}
+        {task.displayBody ? (
+          <div
+            // sanitizeHtml() on the server has already removed all dangerous
+            // tags, event handlers, and unsafe URLs before this reaches the
+            // client. The scoped .luma-email-html CSS rules in globals.css
+            // contain any remaining style bleed.
+            // eslint-disable-next-line react/no-danger
+            dangerouslySetInnerHTML={{ __html: task.displayBody }}
+          />
+        ) : (
+          <div className="flex flex-col gap-3">
+            {task.body.split("\n\n").map((para, i) => (
+              <p
+                key={i}
+                className="text-[var(--text-sm)] leading-[var(--leading-relaxed)]"
+                style={{ color: "var(--luma-text-primary)" }}
+              >
+                {para}
+              </p>
+            ))}
+          </div>
+        )}
 
         {/* Attachment chip */}
         {task.attachment && (
