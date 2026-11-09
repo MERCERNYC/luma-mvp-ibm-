@@ -49,7 +49,7 @@ const AVATAR_COLOR: Record<Task["avatarColor"], string> = {
 const PRIORITY_LABEL: Record<TaskPriority, string> = {
   "action-needed": "Action Needed",
   "for-later":     "For Later",
-  "news-updates":  "News & Updates",
+  "news-updates":  "FYI",
 };
 
 /** The one move available in the pane — only action↔later is exposed for now */
@@ -162,12 +162,17 @@ export function EmailPane({ task, onClose, onDone, onPriorityChange }: EmailPane
   const movePill = moveTarget ? getPillConfig(moveTarget) : null;
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div className="flex flex-col flex-1 min-h-0">
 
-      {/* ── Toolbar ── */}
+      {/* ── Toolbar — sticky so it stays visible while scrolling ── */}
       <div
-        className="flex items-center gap-1 px-5 py-3 shrink-0"
-        style={{ borderBottom: "1px solid var(--luma-glass-border)" }}
+        className="flex items-center gap-1 px-5 py-3 shrink-0 sticky top-0 z-10"
+        style={{
+          borderBottom: "1px solid var(--luma-glass-border)",
+          background: "var(--luma-glass-raised)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+        }}
       >
         {/* Close / back — calls onClose to collapse the pane */}
         <button
@@ -189,8 +194,8 @@ export function EmailPane({ task, onClose, onDone, onPriorityChange }: EmailPane
         <ToolbarBtn label="More"   ><MoreHorizontal size={17} strokeWidth={1.5} aria-hidden="true" /></ToolbarBtn>
       </div>
 
-      {/* ── Email content — scrollable ── */}
-      <div className="flex-1 overflow-y-auto px-7 py-6 flex flex-col gap-5">
+      {/* ── Email body — independently scrollable ── */}
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-7 pt-6 pb-6 flex flex-col gap-5">
 
         {/* Sender row */}
         <div className="flex items-start justify-between gap-3">
@@ -252,6 +257,7 @@ export function EmailPane({ task, onClose, onDone, onPriorityChange }: EmailPane
         {/* Body — HTML render when available, plain-text fallback */}
         {task.displayBody ? (
           <div
+            className="luma-email-html"
             // sanitizeHtml() on the server has already removed all dangerous
             // tags, event handlers, and unsafe URLs before this reaches the
             // client. The scoped .luma-email-html CSS rules in globals.css
@@ -448,36 +454,39 @@ export function EmailPane({ task, onClose, onDone, onPriorityChange }: EmailPane
           </div>
         )}
 
-        {/* Reply composer — hidden after Done */}
-        {!isDone && (
-          <>
-            <ReplyComposer
-              subject={task.subject}
-              body={task.body}
-              sender={task.sender}
-            />
-
-            {/* Done button — kept below the composer */}
-            <button
-              type="button"
-              onClick={handleDone}
-              className="self-end flex items-center gap-2 px-4 py-2 rounded-[var(--radius-full)]
-                text-[var(--text-sm)] font-semibold transition-all duration-100
-                hover:opacity-90 active:scale-[0.98]
-                focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--luma-blue)]"
-              style={{
-                background: "rgba(22,163,74,0.12)",
-                color:      "rgb(22,163,74)",
-                border:     "1px solid rgba(22,163,74,0.25)",
-              }}
-            >
-              <CheckCircle2 size={14} strokeWidth={1.5} aria-hidden="true" />
-              Done
-            </button>
-          </>
-        )}
-
       </div>
+
+      {/* ── Reply composer + Done — fixed footer, never scrolls away ── */}
+      {!isDone && (
+        <div
+          className="shrink-0 px-7 pt-3 pb-5 flex flex-col gap-3"
+          style={{ borderTop: "1px solid var(--luma-glass-border)" }}
+        >
+          <ReplyComposer
+            subject={task.subject}
+            body={task.body}
+            sender={task.sender}
+          />
+
+          {/* Done button — below the composer */}
+          <button
+            type="button"
+            onClick={handleDone}
+            className="self-end flex items-center gap-2 px-4 py-2 rounded-[var(--radius-full)]
+              text-[var(--text-sm)] font-semibold transition-all duration-100
+              hover:opacity-90 active:scale-[0.98]
+              focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--luma-blue)]"
+            style={{
+              background: "rgba(22,163,74,0.12)",
+              color:      "rgb(22,163,74)",
+              border:     "1px solid rgba(22,163,74,0.25)",
+            }}
+          >
+            <CheckCircle2 size={14} strokeWidth={1.5} aria-hidden="true" />
+            Done
+          </button>
+        </div>
+      )}
     </div>
   );
 }

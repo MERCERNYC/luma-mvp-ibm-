@@ -48,18 +48,17 @@ function SkeletonRow() {
 // ── Summary tile ────────────────────────────
 
 interface SummaryCardProps {
-  icon:        React.ReactNode;
-  label:       string;
-  count:       number;
-  description: string;
-  accent:      string;
-  accentBg:    string;
-  isOpen:      boolean;
-  onClick:     () => void;
+  icon:     React.ReactNode;
+  label:    string;
+  count:    number;
+  accent:   string;
+  accentBg: string;
+  isOpen:   boolean;
+  onClick:  () => void;
 }
 
 function SummaryCard({
-  icon, label, count, description, accent, accentBg, isOpen, onClick,
+  icon, label, count, accent, accentBg, isOpen, onClick,
 }: SummaryCardProps) {
   return (
     <button
@@ -67,41 +66,57 @@ function SummaryCard({
       onClick={onClick}
       aria-pressed={isOpen}
       aria-label={`${label}: ${count} emails`}
-      className="flex-1 rounded-[var(--radius-2xl)] px-5 py-4 flex items-center gap-4 text-left
+      className="flex-1 rounded-[var(--radius-xl)] px-4 py-2.5 flex items-center gap-3 text-left
         transition-all duration-150 focus-visible:outline focus-visible:outline-2
         focus-visible:outline-[var(--luma-blue)] focus-visible:outline-offset-2"
       style={{
-        background: accentBg,
+        background: isOpen ? accentBg : "rgba(255,255,255,0.28)",
         border:     isOpen
-          ? `2px solid ${accent}`
+          ? `1.5px solid ${accent}55`
           : "1px solid var(--luma-glass-border)",
-        boxShadow:  isOpen ? `0 0 0 3px ${accent}22` : undefined,
-        cursor:     "pointer",
+        cursor: "pointer",
       }}
     >
-      <div
-        className="shrink-0 w-10 h-10 rounded-[var(--radius-xl)] flex items-center justify-center"
-        style={{ background: accent + "22" }}
+      {/* Icon */}
+      <span
+        style={{ fontSize: 14, lineHeight: 1, opacity: isOpen ? 1 : 0.7, flexShrink: 0 }}
+        aria-hidden="true"
       >
-        <span style={{ color: accent }}>{icon}</span>
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-[var(--text-xs)] font-medium" style={{ color: "var(--luma-text-secondary)" }}>
-          {label}
-        </p>
-        <p className="text-[2rem] font-bold leading-none mt-0.5" style={{ color: "var(--luma-text-primary)" }}>
-          {count}
-        </p>
-        <p className="text-[var(--text-xs)] mt-0.5" style={{ color: "var(--luma-text-tertiary)" }}>
-          {description}
-        </p>
-      </div>
-      {/* Open/close chevron */}
-      <div style={{ color: accent, opacity: 0.7, flexShrink: 0 }} aria-hidden="true">
+        {icon}
+      </span>
+
+      {/* Label */}
+      <span
+        className="flex-1 min-w-0 truncate text-[var(--text-xs)] font-medium"
+        style={{ color: isOpen ? "var(--luma-text-primary)" : "var(--luma-text-secondary)" }}
+      >
+        {label}
+      </span>
+
+      {/* Count badge */}
+      <span
+        className="text-[var(--text-2xs)] font-semibold px-1.5 py-0.5 rounded-[var(--radius-full)] shrink-0"
+        style={{
+          background: isOpen ? `${accent}20` : "rgba(100,140,200,0.12)",
+          color:      isOpen ? accent         : "var(--luma-text-tertiary)",
+        }}
+      >
+        {count}
+      </span>
+
+      {/* Chevron */}
+      <span
+        style={{
+          color:     isOpen ? accent : "var(--luma-text-disabled)",
+          flexShrink: 0,
+          lineHeight: 1,
+        }}
+        aria-hidden="true"
+      >
         {isOpen
-          ? <ChevronUp   size={16} strokeWidth={2} />
-          : <ChevronDown size={16} strokeWidth={2} />}
-      </div>
+          ? <ChevronUp   size={13} strokeWidth={2} />
+          : <ChevronDown size={13} strokeWidth={2} />}
+      </span>
     </button>
   );
 }
@@ -204,7 +219,7 @@ function CategoryCard({
 const CATEGORY_LABEL: Record<TaskPriority, string> = {
   "action-needed": "Action Needed",
   "for-later":     "For Later",
-  "news-updates":  "News & Updates",
+  "news-updates":  "FYI",
 };
 
 const CATEGORY_ICON: Record<TaskPriority, string> = {
@@ -278,7 +293,7 @@ export default function DashboardPage() {
     overrides[t.id] ? { ...t, priority: overrides[t.id] } : t,
   );
 
-  const { focusTasks, activeTasks, isCaughtUp } = useFocusQueue(
+  const { focusTasks, activeTasks, isCaughtUp, windowSize } = useFocusQueue(
     allTasks,
     doneIds,
     generation,
@@ -429,13 +444,13 @@ export default function DashboardPage() {
             >
               Focus Now
             </h2>
-            {/* Live count badge — counts down as tasks are completed */}
-            {status === "ready" && !isCaughtUp && (
+            {/* Progress indicator — counts down as tasks are completed */}
+            {status === "ready" && windowSize > 0 && !isCaughtUp && (
               <span
-                className="text-[var(--text-xs)] font-semibold px-2 py-0.5 rounded-[var(--radius-full)]"
-                style={{ background: "var(--luma-blue-soft)", color: "var(--luma-blue)" }}
+                className="text-[var(--text-xs)] tabular-nums"
+                style={{ color: "var(--luma-text-tertiary)" }}
               >
-                {focusTasks.length}
+                {focusTasks.length} of {windowSize} left
               </span>
             )}
           </div>
@@ -545,30 +560,27 @@ export default function DashboardPage() {
       {/* ── Summary tiles ────────────────────────── */}
       <div className="flex gap-3">
         <SummaryCard
-          icon={<span style={{ fontSize: 18 }}>✉️</span>}
+          icon={<span style={{ fontSize: 14 }}>✉️</span>}
           label="Action Needed"
           count={status === "ready" ? actionCount : 0}
-          description="Requires a reply or decision"
           accent="var(--luma-action)"
           accentBg="var(--luma-action-soft)"
           isOpen={openCategories.has("action-needed")}
           onClick={() => toggleCategory("action-needed")}
         />
         <SummaryCard
-          icon={<span style={{ fontSize: 18 }}>🕐</span>}
+          icon={<span style={{ fontSize: 14 }}>🕐</span>}
           label="For Later"
           count={status === "ready" ? laterCount : 0}
-          description="Keep on your radar"
           accent="var(--luma-later)"
           accentBg="var(--luma-later-soft)"
           isOpen={openCategories.has("for-later")}
           onClick={() => toggleCategory("for-later")}
         />
         <SummaryCard
-          icon={<span style={{ fontSize: 18 }}>📰</span>}
-          label="News & Updates"
+          icon={<span style={{ fontSize: 14 }}>📰</span>}
+          label="FYI"
           count={status === "ready" ? newsCount : 0}
-          description="FYI and newsletters"
           accent="var(--luma-blue)"
           accentBg="var(--luma-blue-soft)"
           isOpen={openCategories.has("news-updates")}
@@ -582,7 +594,7 @@ export default function DashboardPage() {
         style={{ color: "var(--luma-text-tertiary)" }}
       >
         {status === "ready"
-          ? `Sorted by urgency · action-needed → for-later → news-updates · ${emailSource === "gmail" ? "Gmail inbox" : "Sample emails"}`
+          ? `Sorted by urgency · Action Needed → For Later → FYI · ${emailSource === "gmail" ? "Gmail inbox" : "Sample emails"}`
           : "Sorting by urgency…"}
       </p>
     </AppShell>

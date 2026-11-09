@@ -13,10 +13,11 @@ interface AppShellProps {
 
 export function AppShell({ children, emailPane }: AppShellProps) {
   return (
-    <div className="flex flex-col min-h-dvh">
+    <div className="flex flex-col" style={{ height: "100dvh" }}>
       <Header />
 
-      <div className="flex flex-1 overflow-hidden">
+      {/* flex-1 + min-h-0 gives this row a real pixel height = viewport minus header */}
+      <div className="flex flex-1 min-h-0 overflow-hidden">
 
         {/* ── Main content ───────────────────────── */}
         <main
@@ -27,10 +28,10 @@ export function AppShell({ children, emailPane }: AppShellProps) {
           {children}
         </main>
 
-        {/* ── Email reading pane (only when open) ── */}
+        {/* ── Email reading pane — independent scroll container ── */}
         {emailPane && (
           <aside
-            className="w-[500px] shrink-0 overflow-y-auto glass-raised"
+            className="w-[500px] shrink-0 flex flex-col overflow-hidden glass-raised"
             style={{ borderLeft: "1px solid var(--luma-glass-border)" }}
             aria-label="Email reading pane"
           >

@@ -223,7 +223,7 @@ export function ReplyComposer({ subject, body, sender }: ReplyComposerProps) {
 
       {/* ── Prompt row ─────────────────────────────────────────── */}
       <div
-        className="flex items-start gap-2 px-4 py-3"
+        className="flex items-end gap-2 px-4 py-3"
         style={{ borderBottom: draft ? "1px solid var(--luma-glass-border)" : undefined }}
       >
         <textarea
@@ -234,15 +234,15 @@ export function ReplyComposer({ subject, body, sender }: ReplyComposerProps) {
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handlePolish();
           }}
           placeholder="Describe your reply…"
-          rows={2}
+          rows={3}
           aria-label="Describe your reply"
           className="flex-1 resize-none bg-transparent text-[var(--text-sm)] outline-none
             placeholder:text-[var(--luma-text-tertiary)] leading-[var(--leading-relaxed)]"
-          style={{ color: "var(--luma-text-primary)" }}
+          style={{ color: "var(--luma-text-primary)", minHeight: "80px" }}
           disabled={state === "generating"}
         />
 
-        {/* Polish button */}
+        {/* Polish button — aligned to textarea bottom edge */}
         <button
           type="button"
           onClick={handlePolish}
@@ -253,9 +253,11 @@ export function ReplyComposer({ subject, body, sender }: ReplyComposerProps) {
             hover:opacity-85 active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none
             focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--luma-blue)]"
           style={{
-            background: "rgba(124,92,216,0.12)",
-            color:      "var(--luma-purple, #7c5cd8)",
-            border:     "1px solid rgba(124,92,216,0.22)",
+            background:  "rgba(124,92,216,0.12)",
+            color:       "var(--luma-purple, #7c5cd8)",
+            border:      "1px solid rgba(124,92,216,0.22)",
+            flexShrink:  0,
+            marginBottom: "2px",
           }}
         >
           {state === "generating" ? (

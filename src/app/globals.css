@@ -311,6 +311,8 @@ body {
   color: var(--luma-text-primary);
   word-break: break-word;
   overflow-wrap: break-word;
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 /* Images — never overflow the pane */
