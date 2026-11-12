@@ -6,7 +6,7 @@
 
 **An AI-powered email attention assistant that helps people focus on what actually needs them.**
 
-> The goal isn't to help people process more email.  
+> The goal isn't to help people process more email.
 > It's to make email require less mental work.
 
 [![Next.js](https://img.shields.io/badge/Next.js_16-black?style=flat-square&logo=next.js)](https://nextjs.org)
@@ -14,7 +14,17 @@
 [![IBM watsonx](https://img.shields.io/badge/IBM_watsonx_Orchestrate-1F70C1?style=flat-square&logo=ibm&logoColor=white)](https://www.ibm.com/products/watsonx-orchestrate)
 [![Vercel](https://img.shields.io/badge/Vercel-black?style=flat-square&logo=vercel)](https://vercel.com)
 
+**[→ Live Demo: luma-v2-ibm.vercel.app](https://luma-v2-ibm.vercel.app)**
+
 </div>
+
+---
+
+## Preview
+
+[![LUMA Dashboard](public/images/luma-dashboard.png)](https://luma-v2-ibm.vercel.app)
+
+> *Screenshot placeholder — video walkthrough coming soon.*
 
 ---
 
