@@ -6,6 +6,7 @@ import { AppShell }               from "@/components/layout/AppShell";
 import { EmailRow }               from "@/components/email/EmailRow";
 import { EmailPane }              from "@/components/email/EmailPane";
 import { DoneCard }               from "@/components/email/DoneCard";
+import { LaterCard }              from "@/components/email/LaterCard";
 import { WelcomePage }            from "@/components/WelcomePage";
 import { GREETING_NAME }          from "@/data/dashboard";
 import { useClassifiedEmails }    from "@/hooks/useClassifiedEmails";
@@ -218,7 +219,7 @@ function CategoryCard({
 
 const CATEGORY_LABEL: Record<TaskPriority, string> = {
   "action-needed": "Action Needed",
-  "for-later":     "For Later",
+  "for-later":     "Later",
   "news-updates":  "FYI",
 };
 
@@ -543,17 +544,26 @@ export default function DashboardPage() {
       {/* ── Open category cards ──────────────────── */}
       {CATEGORY_ORDER.filter((cat) => openCategories.has(cat)).map((category) => (
         <div key={category} className="mb-4">
-          <CategoryCard
-            category={category}
-            label={CATEGORY_LABEL[category]}
-            icon={CATEGORY_ICON[category]}
-            accent={CATEGORY_ACCENT[category]}
-            accentBg={CATEGORY_BG[category]}
-            tasks={activeTasks.filter((t) => t.priority === category)}
-            selected={selected}
-            onSelect={setSelected}
-            onClose={() => closeCategory(category)}
-          />
+          {category === "for-later" ? (
+            <LaterCard
+              tasks={activeTasks.filter((t) => t.priority === "for-later")}
+              selected={selected}
+              onSelect={setSelected}
+              onClose={() => closeCategory("for-later")}
+            />
+          ) : (
+            <CategoryCard
+              category={category}
+              label={CATEGORY_LABEL[category]}
+              icon={CATEGORY_ICON[category]}
+              accent={CATEGORY_ACCENT[category]}
+              accentBg={CATEGORY_BG[category]}
+              tasks={activeTasks.filter((t) => t.priority === category)}
+              selected={selected}
+              onSelect={setSelected}
+              onClose={() => closeCategory(category)}
+            />
+          )}
         </div>
       ))}
 
@@ -570,7 +580,7 @@ export default function DashboardPage() {
         />
         <SummaryCard
           icon={<span style={{ fontSize: 14 }}>🕐</span>}
-          label="For Later"
+          label="Later"
           count={status === "ready" ? laterCount : 0}
           accent="var(--luma-later)"
           accentBg="var(--luma-later-soft)"
@@ -594,7 +604,7 @@ export default function DashboardPage() {
         style={{ color: "var(--luma-text-tertiary)" }}
       >
         {status === "ready"
-          ? `Sorted by urgency · Action Needed → For Later → FYI · ${emailSource === "gmail" ? "Gmail inbox" : "Sample emails"}`
+          ? `Sorted by urgency · Action Needed → Later → FYI · ${emailSource === "gmail" ? "Gmail inbox" : "Sample emails"}`
           : "Sorting by urgency…"}
       </p>
     </AppShell>
