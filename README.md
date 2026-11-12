@@ -1,21 +1,24 @@
 <div align="center">
 
-# LUMA
+<img src="public/images/luma-logo.png" alt="Luma — Less inbox. More life." width="320" />
 
-### Less inbox. More life.
+<br/>
 
 **An AI-powered email attention assistant that helps people focus on what actually needs them.**
 
 > The goal isn't to help people process more email.  
 > It's to make email require less mental work.
 
-Built with **Next.js · TypeScript · IBM watsonx Orchestrate · Gmail API**
+[![Next.js](https://img.shields.io/badge/Next.js_16-black?style=flat-square&logo=next.js)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![IBM watsonx](https://img.shields.io/badge/IBM_watsonx_Orchestrate-1F70C1?style=flat-square&logo=ibm&logoColor=white)](https://www.ibm.com/products/watsonx-orchestrate)
+[![Vercel](https://img.shields.io/badge/Vercel-black?style=flat-square&logo=vercel)](https://vercel.com)
 
 </div>
 
 ---
 
-## About LUMA
+## What is LUMA?
 
 Email tools are very good at delivering and organizing messages.
 
@@ -23,13 +26,9 @@ But they still leave the hardest question to the user:
 
 **What actually needs my attention right now?**
 
-LUMA is an agentic AI email experience designed around that question.
+LUMA is an agentic AI email experience designed around that question. Instead of presenting another crowded inbox, LUMA reads and understands incoming email, evaluates whether it requires action, prioritizes what matters, recommends a next step, and surfaces a small **Focus Now** queue.
 
-Instead of presenting another crowded inbox, LUMA reads and understands incoming email, evaluates whether it requires action, prioritizes what matters, recommends a next step, and presents a small **Focus Now** queue.
-
-The goal is not inbox zero.
-
-The goal is **less cognitive load**.
+The goal is not inbox zero. The goal is **less cognitive load**.
 
 ---
 
@@ -44,49 +43,35 @@ A traditional inbox asks the user to repeatedly decide:
 - Is this just information?
 - Is this marketing pretending to be urgent?
 
-Those decisions create mental work before the user has even started acting on the email.
-
-LUMA moves that decision-making support upstream.
+Those decisions create mental work before the user has even started acting on the email. LUMA moves that decision-making support upstream.
 
 ---
 
-## The Solution
+## How It Works
 
-LUMA turns a large inbox into a smaller attention system.
-
-```text
+```
 Gmail
   ↓
 Normalize Email
   ↓
-LUMA Agent
+LUMA Agent (IBM watsonx Orchestrate)
   ↓
-UNDERSTAND
-What is this?
-  ↓
-PRIORITIZE
-Does it need attention?
-  ↓
-RECOMMEND
-What should I do?
-  ↓
-ASSIST
-Help me act
+UNDERSTAND → PRIORITIZE → RECOMMEND → ASSIST
   ↓
 Focus Now
   ↓
 Human Decision
 ```
 
-LUMA organizes email into three primary categories:
+LUMA organizes email into three categories:
 
 | Category | Meaning |
 |---|---|
-| **Action Needed** | Requires attention or action |
-| **For Later** | Relevant, but does not need attention now |
-| **FYI** | Informational, newsletter, update, or low-attention content |
+| **Action Needed** | Requires a reply or decision |
+| **For Later** | Relevant, but not urgent right now |
+| **FYI** | Informational, newsletters, updates |
 
-The most important actionable emails are surfaced separately in **Focus Now**.
+The most important actionable emails are surfaced in **Focus Now**.
 
 ---
 
@@ -96,30 +81,23 @@ Focus Now is the core LUMA experience.
 
 Rather than showing the entire inbox at once, LUMA creates a finite queue of **up to five actionable emails**.
 
-```text
+```
 5 → 4 → 3 → 2 → 1 → 0
 ```
 
-As the user completes emails, the queue gets smaller.
-
-LUMA does **not** fill empty Focus Now positions with newsletters, promotions, or lower-priority emails just to keep the list full.
+As the user completes emails, the queue counts down. LUMA does **not** fill empty slots with newsletters or lower-priority emails to keep the list full.
 
 When the queue reaches zero:
 
-> ✨ You're caught up  
-> Nothing needs your attention right now.
+> ✨ You're caught up — nothing needs your attention right now.
 
-The user can then choose **Prioritize Again** to generate another attention window.
+The user can then choose **Prioritize Again** to generate a fresh window.
 
 ---
 
 ## One Agent by Design
 
-LUMA intentionally uses **one agent** for the current product scope.
-
-This is a deliberate architecture decision.
-
-The problem is focused: understand email and help the user decide what deserves attention.
+LUMA intentionally uses **one agent** for the current product scope. This is a deliberate architecture decision.
 
 The LUMA Agent performs four connected capabilities:
 
@@ -128,73 +106,52 @@ The LUMA Agent performs four connected capabilities:
 3. **Recommend** — explain why it matters and suggest a next step
 4. **Assist** — help the user act, including drafting a reply
 
-A multi-agent architecture would currently introduce additional orchestration, handoffs, latency, and failure points without providing enough additional user value.
-
-As LUMA expands into separate domains such as **calendar, tasks, scheduling, and other productivity systems**, specialized agents may become appropriate.
+A multi-agent architecture would currently introduce additional orchestration, handoffs, latency, and failure points without enough additional user value. As LUMA expands into calendar, tasks, and scheduling, specialized agents may become appropriate.
 
 ---
 
 ## Human in the Loop
 
-LUMA is designed to assist decision-making rather than silently take consequential actions.
+LUMA assists decision-making rather than silently taking consequential actions.
 
 **AI prepares. Human approves.**
 
-LUMA can:
-
-- understand an email
-- identify whether action is required
-- evaluate urgency
-- prioritize messages
-- explain why an email matters
-- recommend a next step
-- draft a reply
-
-The user remains in control of the final action.
+LUMA can: understand an email, identify whether action is required, evaluate urgency, prioritize messages, explain why an email matters, recommend a next step, and draft a reply. The user remains in control of the final action.
 
 ---
 
-## AI Architecture
+## IBM watsonx Orchestrate + IBM Bob
 
-LUMA uses a provider-independent agent service.
+LUMA is built with **IBM watsonx Orchestrate** as its AI backbone and was developed using **IBM Bob** as its agentic coding assistant.
 
-```text
+```
 Next.js Application
         ↓
 Server API Routes
         ↓
-AgentService
+AgentService (IAgent interface)
         ↓
- ┌───────────────┐
- │               │
+ ┌──────────────────┐
+ │                  │
 MockAgent    WatsonxAgent
- │               │
-Local        IBM watsonx
-Testing      Orchestrate
- └───────┬───────┘
-         ↓
-Structured Result
-         ↓
-LUMA Dashboard
+ │                  │
+Local         IBM watsonx
+Testing       Orchestrate
+ └──────┬───────────┘
+        ↓
+ Structured Result
+        ↓
+ LUMA Dashboard
 ```
 
-The application communicates with the AI layer through a shared `IAgent` contract.
-
-This means the interface does not need to know whether the active provider is the local MockAgent or IBM watsonx Orchestrate.
-
-The provider is selected server-side using:
+The application communicates with the AI layer through a shared `IAgent` contract, keeping the interface provider-agnostic. Provider selection is server-side via environment variable:
 
 ```env
-AGENT_PROVIDER=mock
+AGENT_PROVIDER=mock      # local development / testing
+AGENT_PROVIDER=watsonx   # IBM watsonx Orchestrate
 ```
 
-or:
-
-```env
-AGENT_PROVIDER=watsonx
-```
-
-This keeps provider credentials and AI implementation details out of the browser.
+IBM Bob was used throughout V1 and V2 development for architecture decisions, code generation, debugging, and iterative feature work — functioning as a collaborative engineering partner across the entire build.
 
 ---
 
@@ -203,163 +160,66 @@ This keeps provider credentials and AI implementation details out of the browser
 For each email, LUMA evaluates several independent dimensions.
 
 ### Email Type
-
-```text
-communication
-notification
-promotion
-potential_spam
+```
+communication · notification · promotion · potential_spam
 ```
 
 ### Priority
-
-The watsonx agent returns:
-
-```text
-urgent
-action
-later
-news
 ```
-
-These are mapped internally to the dashboard categories:
-
-```text
-urgent/action → action-needed
-later         → for-later
-news          → news-updates
+urgent / action  →  action-needed
+later            →  for-later
+news             →  news-updates (FYI)
 ```
 
 ### Additional Signals
 
-LUMA also evaluates:
+- Whether the email requires action
+- A short reason explaining the classification
+- A recommended next step
+- Confidence score
+- Internal urgency score used for sorting
 
-- whether the email requires action
-- a short reason explaining the classification
-- a recommended next step
-- confidence
-- an internal urgency score used for sorting
-
-Priority, email type, and required action are treated as separate concepts.
-
-A notification can be urgent.
-
-A communication can require no action.
-
-A promotion containing the word **URGENT** should not automatically become important.
+Priority, email type, and required action are treated as separate concepts. A notification can be urgent. A communication can require no action. A promotion containing the word "URGENT" should not automatically become important.
 
 ---
 
 ## Sorting Logic
 
-After classification, LUMA sorts messages using:
-
-```text
-Priority Bucket
-      ↓
-Urgency Score
-      ↓
-Received Time
+```
+Priority Bucket  →  Urgency Score  →  Received Time
 ```
 
-Within the same category, more time-sensitive emails surface first.
-
-When urgency is equal, the most recently received email is shown first.
+Within the same category, more time-sensitive emails surface first. When urgency is equal, the most recently received email is shown first.
 
 ---
 
 ## Gmail Integration
 
-LUMA V2 integrates with Gmail using Google OAuth 2.0 and the Gmail API.
+LUMA V2 integrates with Gmail using Google OAuth 2.0 with a `gmail.readonly` scope.
 
-The current implementation requests:
-
-```text
-gmail.readonly
+```
+Gmail API  →  Message Normalizer  →  Clean Classification Input  →  LUMA Agent
 ```
 
-This gives LUMA read-only access to authorized Gmail messages.
-
-The application currently retrieves up to **50 recent inbox messages**.
-
-```text
-Gmail API
-   ↓
-Message Normalizer
-   ↓
-Clean Classification Input
-   ↓
-LUMA Agent
-```
-
-If Gmail is unavailable or not connected, LUMA can fall back to its evaluation dataset.
-
----
-
-## Email Normalization
-
-Real-world email is messy.
-
-Messages can contain:
-
-- HTML
-- tracking links
-- newsletters
-- forwarded content
-- encoded characters
-- signatures
-- buttons
-- formatting
-- large amounts of irrelevant markup
-
-LUMA includes a Gmail normalization layer before messages reach the AI.
-
-The classifier receives clean text while the reading experience can preserve a sanitized display version.
-
-This separation helps keep presentation markup from interfering with AI classification.
+- Retrieves up to **50 recent inbox messages**
+- Falls back to a sample dataset if Gmail is unavailable or not connected
+- Sanitizes email HTML before display to remove tracking pixels, unsafe links, and markup
 
 ---
 
 ## AI Reply Assistant
 
-LUMA also includes AI-assisted reply drafting.
+The user provides an intent and LUMA uses the original email context to generate a concise draft. The assistant is explicitly instructed not to invent dates, commitments, names, availability, or facts not present in the email.
 
-The user provides an intent, and LUMA uses the original email context to generate a concise draft.
-
-The reply assistant is explicitly instructed not to invent:
-
-- dates
-- commitments
-- names
-- availability
-- facts not contained in the email or user instruction
-
-The generated response remains editable.
-
-LUMA does **not** automatically send the email.
+The generated response is editable. LUMA does **not** automatically send email.
 
 ---
 
 ## Evaluation
 
-Before connecting LUMA to real Gmail, its email intelligence was tested against a controlled evaluation dataset.
+Before connecting to real Gmail, LUMA was tested against a controlled dataset of **50 deliberately challenging email scenarios**.
 
-The repository includes **50 deliberately challenging email scenarios** covering cases such as:
-
-- genuine deadlines
-- fake urgency
-- promotions
-- school communication
-- financial alerts
-- notifications
-- newsletters
-- spam-like messages
-- emails requiring action
-- informational emails
-
-This allowed the prioritization behavior to be evaluated before introducing the variability of a real inbox.
-
-### LUMA v7 Evaluation
+### LUMA v7 Evaluation Results
 
 | Metric | Result |
 |---|---:|
@@ -370,33 +230,7 @@ This allowed the prioritization behavior to be evaluated before introducing the 
 | Urgent Recall | **100%** |
 | False Action Rate | **0%** |
 
-The evaluation dataset remains part of the project as a regression benchmark while Gmail provides real-world testing.
-
----
-
-## Product Experience
-
-LUMA was designed around reducing cognitive load rather than reproducing a traditional inbox.
-
-Key interaction principles include:
-
-- a maximum of five Focus Now items
-- strong visual hierarchy
-- short explanations
-- clear next actions
-- finite progress
-- quiet secondary categories
-- minimal visual competition
-- human confirmation
-- accessible interaction states
-
-The interface uses a bright, glass-based visual system with navy typography, soft blue atmospheric backgrounds, generous whitespace, and restrained semantic color.
-
-The design system is documented in:
-
-```text
-docs/design-system.md
-```
+The evaluation dataset remains as a regression benchmark while Gmail provides real-world testing.
 
 ---
 
@@ -411,49 +245,38 @@ docs/design-system.md
 | Icons | Lucide React |
 | Animation | GSAP |
 | AI | IBM watsonx Orchestrate |
+| Dev Assistant | IBM Bob |
 | Email | Gmail API |
-| Authentication | Google OAuth 2.0 |
+| Auth | Google OAuth 2.0 |
 | Deployment | Vercel |
 
 ---
 
 ## Project Structure
 
-```text
+```
 src/
 ├── app/
 │   ├── api/
-│   │   ├── agent/
-│   │   ├── auth/
-│   │   └── gmail/
+│   │   ├── agent/          # classify, compose-reply, daily-brief
+│   │   ├── auth/gmail/     # OAuth flow + token management
+│   │   └── gmail/          # Gmail message fetching
 │   ├── globals.css
-│   └── page.tsx
+│   └── page.tsx            # Dashboard
 │
 ├── components/
-│   ├── email/
-│   ├── layout/
-│   └── ui/
-│
-├── data/
-│   ├── emailDataset.ts
-│   └── emailEvaluationDataset.ts
+│   ├── email/              # EmailPane, ReplyComposer, DoneCard
+│   ├── layout/             # AppShell, Header, PreferencesModal
+│   └── WelcomePage.tsx
 │
 ├── hooks/
 │   ├── useClassifiedEmails.ts
 │   ├── useDoneEmails.ts
-│   ├── useFeedback.ts
 │   └── useFocusQueue.ts
 │
 ├── services/
-│   ├── agent/
-│   │   ├── AgentService.ts
-│   │   ├── MockAgent.ts
-│   │   ├── WatsonxAgent.ts
-│   │   └── types.ts
-│   │
-│   └── gmail/
-│       ├── classifyInputToTask.ts
-│       └── normalizer.ts
+│   ├── agent/              # AgentService, MockAgent, WatsonxAgent
+│   └── gmail/              # normalizer, classifyInputToTask
 │
 └── types/
 ```
@@ -477,39 +300,30 @@ npm install
 
 ### 3. Configure environment variables
 
-Create:
+Create `.env.local` in the project root:
 
-```text
-.env.local
-```
-
-For the mock provider:
-
+**Mock provider (no external services needed):**
 ```env
 AGENT_PROVIDER=mock
 NEXT_PUBLIC_URL=http://localhost:3000
 ```
 
-For Gmail:
-
+**With Gmail:**
 ```env
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
+GOOGLE_CLIENT_ID=your_client_id
+GOOGLE_CLIENT_SECRET=your_client_secret
 NEXT_PUBLIC_URL=http://localhost:3000
 ```
 
-For IBM watsonx Orchestrate:
-
+**With IBM watsonx Orchestrate:**
 ```env
 AGENT_PROVIDER=watsonx
-WATSONX_API_KEY=
-ORCHESTRATE_INSTANCE_URL=
-ORCHESTRATE_AGENT_ID=
+WATSONX_API_KEY=your_key
+ORCHESTRATE_INSTANCE_URL=your_url
+ORCHESTRATE_AGENT_ID=your_agent_id
 ```
 
-**Never commit real credentials or `.env.local` to GitHub.**
-
-The repository's `.gitignore` already excludes `.env*`.
+> **Never commit `.env.local` or real credentials.** The `.gitignore` already excludes `.env*`.
 
 ### 4. Start development
 
@@ -517,78 +331,48 @@ The repository's `.gitignore` already excludes `.env*`.
 npm run dev
 ```
 
-Open:
-
-```text
-http://localhost:3000
-```
-
-If you intentionally run Next.js on another port, make sure `NEXT_PUBLIC_URL` and your Google OAuth redirect URI use that same port.
+Open `http://localhost:3000`
 
 ---
 
 ## Google OAuth Setup
 
-Enable the Gmail API in Google Cloud and create an OAuth 2.0 Web Application credential.
+1. Enable the Gmail API in Google Cloud Console
+2. Create an OAuth 2.0 Web Application credential
+3. Add authorized origins and redirect URI:
 
-For local development, authorize:
-
-```text
-http://localhost:3000
+```
+Authorized origin:       http://localhost:3000
+Authorized redirect URI: http://localhost:3000/api/auth/gmail/callback
 ```
 
-and the callback:
-
-```text
-http://localhost:3000/api/auth/gmail/callback
-```
-
-For production, use the deployed HTTPS domain for both the application origin and callback.
-
-LUMA requests only:
-
-```text
-https://www.googleapis.com/auth/gmail.readonly
-```
+For production, replace with your deployed HTTPS domain. LUMA requests only `gmail.readonly`.
 
 ---
 
 ## Security & Privacy
 
-LUMA follows a minimal-permission approach for its current MVP.
+| Protection | Detail |
+|---|---|
+| OAuth scope | `gmail.readonly` only |
+| CSRF protection | State parameter validation |
+| Token storage | HttpOnly cookie |
+| AI provider access | Server-side only |
+| Secrets | Environment variables, never in client |
+| Email display | Sanitized before render |
+| Send / delete / archive | Not implemented — human action required |
 
-Current protections include:
-
-- Gmail read-only OAuth scope
-- OAuth CSRF state validation
-- HttpOnly token cookies
-- server-side AI provider access
-- environment-based secrets
-- sanitized email display content
-- no automatic Gmail send/delete/archive behavior
-- human review of generated replies
-
-### MVP limitation
-
-The current Gmail token implementation stores OAuth tokens in an **HttpOnly cookie**.
-
-This is suitable for the current MVP/testing architecture, but a production multi-user version should move OAuth credentials to encrypted server-side storage associated with an authenticated user.
+**MVP note:** OAuth tokens are stored in an HttpOnly cookie. A production multi-user version should move credentials to encrypted server-side storage associated with an authenticated user session.
 
 ---
 
 ## Available Scripts
 
 ```bash
-npm run dev
-npm run build
-npm run start
-npm run lint
-```
-
-The repository also contains an evaluation script for testing the mock email intelligence against the benchmark dataset:
-
-```text
-scripts/evaluate-mock-agent.ts
+npm run dev       # start development server
+npm run build     # production build
+npm run start     # serve production build
+npm run lint      # ESLint
 ```
 
 ---
@@ -596,89 +380,59 @@ scripts/evaluate-mock-agent.ts
 ## Product Evolution
 
 ### V1 — Intelligence
+Controlled email dataset and classification logic. Goal: *Can LUMA correctly understand and prioritize difficult email scenarios?*
 
-Controlled email dataset and classification logic.
-
-Goal:
-
-**Can LUMA correctly understand and prioritize difficult email scenarios?**
-
-### V2 — Real Inbox
-
-Gmail + IBM watsonx Orchestrate + Focus Now + reply assistance.
-
-Goal:
-
-**Does LUMA reduce the mental work of deciding what deserves attention?**
+### V2 — Real Inbox *(current)*
+Gmail + IBM watsonx Orchestrate + Focus Now + reply assistance. Goal: *Does LUMA reduce the mental work of deciding what deserves attention?*
 
 ### Future
-
-Potential future capabilities include:
-
-- preference learning
-- corrections that influence future prioritization
-- persistent user profiles
-- calendar integration
-- task integration
-- approved Gmail actions
-- reminders and scheduling
-- personalized attention management
-
-At that point, LUMA may evolve from its current single-agent architecture into specialized agents coordinated across separate domains.
+Potential future capabilities include preference learning, persistent user profiles, calendar and task integration, approved Gmail actions, reminders, and scheduling. At that scale, LUMA may evolve from its current single-agent architecture into coordinated specialized agents.
 
 ---
 
 ## Design Philosophy
 
-LUMA is not trying to build another inbox.
-
-It is exploring a different relationship between people and email:
-
-```text
-Traditional Inbox
-
-Everything arrived
-      ↓
-User scans everything
-      ↓
-User decides what matters
-      ↓
-User acts
 ```
-
-```text
-LUMA
-
-Everything arrived
-      ↓
-AI understands the inbox
-      ↓
-LUMA identifies what deserves attention
-      ↓
-User sees a small Focus Now queue
-      ↓
-Human decides and acts
+Traditional Inbox          LUMA
+─────────────────          ────
+Everything arrived    →    Everything arrived
+User scans all        →    AI understands inbox
+User decides          →    LUMA identifies what matters
+User acts             →    User sees Focus Now queue
+                      →    Human decides and acts
 ```
 
 The product is designed around one question:
 
-# What actually needs me today?
+### What actually needs me today?
 
 ---
 
 ## Author
 
-**Juliana Mercer Fogg**
+**Juliana Mercer Fogg** — Software Engineer · AI Product Builder
 
-Software Engineer · AI Product Builder
+LUMA was developed as an Agentic AI project through the **IBM Learning Lab**, combining user-centered product design, AI agent architecture, Gmail integration, and IBM watsonx Orchestrate — with **IBM Bob** as the engineering co-pilot throughout.
 
-LUMA was developed as an Agentic AI project through the **IBM Learning Lab**, combining user-centered product design, AI agent architecture, Gmail integration, and IBM watsonx Orchestrate.
+---
+
+## License
+
+MIT License
+
+Copyright (c) 2025 Juliana Mercer Fogg
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
 <div align="center">
 
-### LUMA
+<img src="public/images/luma-logo.png" alt="Luma" width="140" />
 
 **Less inbox. More life.**
 

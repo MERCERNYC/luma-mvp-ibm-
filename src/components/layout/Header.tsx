@@ -1,13 +1,14 @@
 "use client";
 
+import Image                     from "next/image";
 import { useState }              from "react";
-import { Sun, Bell, Settings2 }  from "lucide-react";
+import { Bell, Settings2 }       from "lucide-react";
 import { PreferencesModal }      from "@/components/layout/PreferencesModal";
 
 /* ─────────────────────────────────────────────
    Header
-   Full-width top bar matching the reference image.
-   Left:  LUMA wordmark + tagline
+   Full-width top bar.
+   Left:  LUMA logo image
    Right: LUMA Preferences button · bell · avatar
    ───────────────────────────────────────────── */
 
@@ -16,33 +17,19 @@ export function Header() {
 
   return (
     <header
-      className="flex items-center justify-between px-8 py-4"
+      className="flex items-center justify-between px-8 py-3"
       style={{ borderBottom: "1px solid var(--luma-glass-border)" }}
     >
-      {/* Left — logo + tagline */}
-      <div className="flex items-center gap-3">
-        {/* Icon mark */}
-        <div
-          className="w-10 h-10 rounded-[var(--radius-full)] flex items-center justify-center shrink-0"
-          style={{ background: "var(--luma-blue-soft)" }}
-          aria-hidden="true"
-        >
-          <Sun size={20} strokeWidth={1.5} style={{ color: "var(--luma-blue)" }} />
-        </div>
-        <div className="flex flex-col leading-none">
-          <span
-            className="text-[var(--text-lg)] font-bold tracking-[var(--tracking-wide)] uppercase"
-            style={{ color: "var(--luma-text-primary)", letterSpacing: "0.18em" }}
-          >
-            L U M A
-          </span>
-          <span
-            className="text-[var(--text-xs)] mt-0.5"
-            style={{ color: "var(--luma-text-tertiary)" }}
-          >
-            Less inbox. More life.
-          </span>
-        </div>
+      {/* Left — logo */}
+      <div className="flex items-center">
+        <Image
+          src="/images/luma-logo.png"
+          alt="Luma — Less inbox. More life."
+          width={160}
+          height={56}
+          priority
+          style={{ objectFit: "contain", height: 44, width: "auto" }}
+        />
       </div>
 
       {/* Right — actions */}
