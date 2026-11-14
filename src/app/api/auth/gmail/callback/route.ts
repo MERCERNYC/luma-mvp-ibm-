@@ -10,7 +10,7 @@
    On success:
      1. Verifies state against the cookie (CSRF check).
      2. Exchanges the code for access + refresh tokens.
-     3. Stores tokens in a single HttpOnly cookie ("gmail_tokens").
+     3. Stores tokens in an iron-session encrypted cookie.
      4. Redirects to "/" so the dashboard loads with Gmail connected.
 
    On error (denial, state mismatch, token exchange failure):
@@ -19,23 +19,45 @@
 
    Token storage
    ─────────────
-   Tokens are stored server-side in an HttpOnly cookie so they are
-   never accessible to client JavaScript.  The cookie is:
-     - httpOnly: true  — no JS access
-     - sameSite: lax   — safe for top-level navigations
-     - path: /         — readable by all API routes
-     - maxAge: 30 days — auto-expires; user re-authenticates after
+   Tokens are stored in an iron-session cookie (AES-256-GCM encrypted)
+   so the plaintext is never sent to the client.  The old gmail_tokens
+   plaintext cookie is deleted on every callback to migrate existing
+   sessions.
    ═══════════════════════════════════════════════════════════════ */
 
 import { NextRequest, NextResponse } from "next/server";
 import { cookies }                   from "next/headers";
+import { getSession }                from "@/lib/session";
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
+const IS_PROD   = process.env.NODE_ENV === "production";
 
 export interface GmailTokens {
   access_token:  string;
   refresh_token: string | null;
   expiry_date:   number; /* Unix ms */
+}
+
+/** Runtime type-guard — rejects cookies that don't have the expected shape. */
+export function isValidTokens(v: unknown): v is GmailTokens {
+  if (typeof v !== "object" || v === null) return false;
+  const t = v as Record<string, unknown>;
+  return (
+    typeof t.access_token === "string"  && t.access_token.length > 0 &&
+    (t.refresh_token === null || typeof t.refresh_token === "string") &&
+    typeof t.expiry_date === "number"
+  );
+}
+
+/** Shared cookie options for gmail_tokens — keeps set/delete calls in sync. */
+export function tokenCookieOptions(maxAge: number) {
+  return {
+    httpOnly: true,
+    secure:   IS_PROD,
+    sameSite: "lax" as const,
+    maxAge,
+    path:     "/",
+  };
 }
 
 export async function GET(request: NextRequest) {
@@ -112,13 +134,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/?gmail_error=token_exchange`);
   }
 
-  // ── Store tokens in HttpOnly cookie ────────────────────────
-  jar.set("gmail_tokens", JSON.stringify(tokens), {
-    httpOnly: true,
-    sameSite: "lax",
-    maxAge:   60 * 60 * 24 * 30, // 30 days
-    path:     "/",
-  });
+  // ── Store tokens in encrypted iron-session cookie ───────────
+  // Also delete any legacy plaintext gmail_tokens cookie so existing
+  // users get cleanly migrated on their next login.
+  jar.delete("gmail_tokens");
+
+  const session = await getSession();
+  session.gmailTokens = tokens;
+  await session.save();
 
   return NextResponse.redirect(`${origin}/`);
 }

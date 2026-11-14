@@ -25,7 +25,8 @@
      anything else          → uses the local mock
    ═══════════════════════════════════════════════════════════════ */
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { aiRouteLimiter }            from "@/lib/rateLimit";
 
 // ── Request / response types ─────────────────────────────────────
 
@@ -131,7 +132,24 @@ async function watsonxDraft(req: ComposeReplyRequest): Promise<string> {
 
 // ── Route handler ────────────────────────────────────────────────
 
-export async function POST(request: Request) {
+// Field length limits — caps prevent prompt-injection via oversized
+// fields and limit token usage on the watsonx side.
+const MAX_SUBJECT     = 200;
+const MAX_BODY        = 8_000;
+const MAX_SENDER      = 200;
+const MAX_INSTRUCTION = 500;
+
+function truncate(s: string | undefined, max: number): string {
+  if (!s) return "";
+  return s.length > max ? s.slice(0, max) : s;
+}
+
+export async function POST(request: NextRequest) {
+  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+  if (!aiRouteLimiter.check(ip)) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+  }
+
   let body: ComposeReplyRequest;
 
   try {
@@ -149,6 +167,14 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+
+  // Clamp all string fields before they reach the prompt builder.
+  body = {
+    subject:     truncate(body.subject,     MAX_SUBJECT),
+    sender:      truncate(body.sender,      MAX_SENDER),
+    body:        truncate(body.body,        MAX_BODY),
+    instruction: truncate(body.instruction, MAX_INSTRUCTION),
+  };
 
   const provider = process.env.AGENT_PROVIDER ?? "mock";
 

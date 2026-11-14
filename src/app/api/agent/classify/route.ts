@@ -14,11 +14,20 @@
      500  — provider threw an unexpected error
    ═══════════════════════════════════════════════════════════════ */
 
-import { NextResponse }  from "next/server";
-import { agentService }  from "@/services/agent";
-import type { ClassifyInput } from "@/services/agent";
+import { NextRequest, NextResponse } from "next/server";
+import { agentService }              from "@/services/agent";
+import type { ClassifyInput }        from "@/services/agent";
+import { aiRouteLimiter }            from "@/lib/rateLimit";
 
-export async function POST(request: Request) {
+// Max emails per classify call — matches the Gmail route's maxResults cap.
+const MAX_EMAILS = 50;
+
+export async function POST(request: NextRequest) {
+  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+  if (!aiRouteLimiter.check(ip)) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+  }
+
   let body: { emails?: ClassifyInput[] };
 
   try {
@@ -35,6 +44,11 @@ export async function POST(request: Request) {
       { error: "Request body must include a non-empty `emails` array." },
       { status: 400 },
     );
+  }
+
+  // Silently cap oversized batches — prevents runaway parallelism/quota burn.
+  if (body.emails.length > MAX_EMAILS) {
+    body.emails = body.emails.slice(0, MAX_EMAILS);
   }
 
   try {

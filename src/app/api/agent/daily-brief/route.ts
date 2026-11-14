@@ -14,11 +14,20 @@
      500  — provider threw an unexpected error
    ═══════════════════════════════════════════════════════════════ */
 
-import { NextResponse }  from "next/server";
-import { agentService }  from "@/services/agent";
-import type { DailyBriefInput } from "@/services/agent";
+import { NextRequest, NextResponse } from "next/server";
+import { agentService }              from "@/services/agent";
+import type { DailyBriefInput }      from "@/services/agent";
+import { aiRouteLimiter }            from "@/lib/rateLimit";
 
-export async function POST(request: Request) {
+// Max emails summarised per brief — aligns with the classify cap.
+const MAX_EMAILS = 50;
+
+export async function POST(request: NextRequest) {
+  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+  if (!aiRouteLimiter.check(ip)) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+  }
+
   let body: DailyBriefInput;
 
   try {
@@ -35,6 +44,11 @@ export async function POST(request: Request) {
       { error: "Request body must include `emails` array and `userName` string." },
       { status: 400 },
     );
+  }
+
+  // Silently cap — no value in summarising more than 50 emails.
+  if (body.emails.length > MAX_EMAILS) {
+    body.emails = body.emails.slice(0, MAX_EMAILS);
   }
 
   try {

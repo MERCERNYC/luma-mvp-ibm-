@@ -39,7 +39,7 @@
    ═══════════════════════════════════════════════════════════════ */
 
 import { NextResponse }    from "next/server";
-import { cookies }         from "next/headers";
+import { getSession }      from "@/lib/session";
 import type { GmailTokens } from "@/app/api/auth/gmail/callback/route";
 import {
   gmailMessageToClassifyInput,
@@ -83,16 +83,12 @@ export async function GET() {
   }
 
   // ── Check Gmail auth ─────────────────────────────────────────
-  const jar   = await cookies();
-  const raw   = jar.get("gmail_tokens")?.value;
+  const session = await getSession();
+  const tokens  = session.gmailTokens;
 
-  if (!raw) {
+  if (!tokens) {
     return NextResponse.json({ source: "not_connected", rows: [] });
   }
-
-  let tokens: GmailTokens;
-  try { tokens = JSON.parse(raw) as GmailTokens; }
-  catch { return NextResponse.json({ source: "not_connected", rows: [] }); }
 
   let accessToken: string;
   try { accessToken = await getAccessToken(tokens); }

@@ -1,13 +1,15 @@
 /* ═══════════════════════════════════════════════════════════════
    POST /api/auth/gmail/disconnect
    ───────────────────────────────────────────────────────────────
-   Clears the gmail_tokens HttpOnly cookie so LUMA considers the
-   user disconnected from Gmail.
+   Revokes the Gmail OAuth tokens with Google, then destroys the
+   iron-session so LUMA considers the user disconnected.
 
-   This does NOT revoke the token with Google (no network call).
-   The access token will simply expire on its own.  If token
-   revocation is needed in future, POST to:
-     https://oauth2.googleapis.com/revoke?token=<access_token>
+   Token revocation
+   ────────────────
+   POSTs the refresh token to Google's revoke endpoint.  Handles
+   400 responses gracefully — the token may already be expired or
+   previously revoked.  The session is destroyed regardless of the
+   revocation outcome, so the user is always logged out locally.
 
    Why POST and not GET?
    A GET endpoint that deletes auth state is CSRF-vulnerable — any
@@ -19,21 +21,42 @@
      { disconnected: true }
    ═══════════════════════════════════════════════════════════════ */
 
-import { NextResponse } from "next/server";
-import { cookies }      from "next/headers";
+import { NextResponse }  from "next/server";
+import { cookies }       from "next/headers";
+import { getSession }    from "@/lib/session";
+
+const REVOKE_URL = "https://oauth2.googleapis.com/revoke";
 
 export async function POST() {
-  const jar = await cookies();
+  const session = await getSession();
+  const tokens  = session.gmailTokens;
 
-  // Clear the tokens cookie by setting maxAge to 0.
-  // The cookie name, path, and httpOnly must match exactly what was set
-  // in /api/auth/gmail/callback so the browser removes it.
-  jar.set("gmail_tokens", "", {
-    httpOnly: true,
-    sameSite: "lax",
-    maxAge:   0,
-    path:     "/",
-  });
+  // ── Revoke refresh token with Google ─────────────────────────
+  // We revoke the refresh token (longer-lived) rather than the
+  // access token.  Errors are logged but do not block disconnect —
+  // the session is always cleared locally.
+  if (tokens?.refresh_token) {
+    try {
+      const res = await fetch(REVOKE_URL, {
+        method:  "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body:    new URLSearchParams({ token: tokens.refresh_token }),
+      });
+      if (!res.ok && res.status !== 400) {
+        // 400 = already revoked/expired — expected; anything else is worth logging.
+        console.warn("[gmail/disconnect] revoke returned", res.status);
+      }
+    } catch (err) {
+      console.warn("[gmail/disconnect] revoke network error:", err);
+    }
+  }
+
+  // ── Destroy the iron-session ──────────────────────────────────
+  await session.destroy();
+
+  // ── Also clear any legacy plaintext gmail_tokens cookie ──────
+  const jar = await cookies();
+  jar.delete("gmail_tokens");
 
   return NextResponse.json({ disconnected: true });
 }

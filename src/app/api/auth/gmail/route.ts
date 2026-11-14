@@ -17,17 +17,34 @@
      4. Copy client ID + secret into .env.local.
    ═══════════════════════════════════════════════════════════════ */
 
-import { NextResponse }  from "next/server";
-import { cookies }       from "next/headers";
-import { randomBytes }   from "crypto";
+import { NextRequest, NextResponse } from "next/server";
+import { cookies }                   from "next/headers";
+import { randomBytes }               from "crypto";
+import { authRouteLimiter }          from "@/lib/rateLimit";
 
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
-const SCOPE          = "https://www.googleapis.com/auth/gmail.readonly";
+const SCOPE           = "https://www.googleapis.com/auth/gmail.readonly";
+const IS_PROD         = process.env.NODE_ENV === "production";
 
-export async function GET() {
-  const clientId    = process.env.GOOGLE_CLIENT_ID;
-  const origin      = process.env.NEXT_PUBLIC_URL ?? "http://localhost:3000";
-  const redirectUri = `${origin}/api/auth/gmail/callback`;
+/** Derive and validate the app origin from env.
+ *  Strips trailing slash.
+ *  In production, rejects any non-HTTPS origin to prevent tokens
+ *  being issued against a plain-HTTP redirect URI.
+ */
+function getOrigin(): string | null {
+  const raw = (process.env.NEXT_PUBLIC_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  if (IS_PROD && !raw.startsWith("https://")) return null;
+  return raw;
+}
+
+export async function GET(request: NextRequest) {
+  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+  if (!authRouteLimiter.check(ip)) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+  }
+
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const origin   = getOrigin();
 
   if (!clientId) {
     return NextResponse.json(
@@ -36,12 +53,22 @@ export async function GET() {
     );
   }
 
+  if (!origin) {
+    return NextResponse.json(
+      { error: "NEXT_PUBLIC_URL must be an https:// URL in production." },
+      { status: 500 },
+    );
+  }
+
+  const redirectUri = `${origin}/api/auth/gmail/callback`;
+
   // Generate a random state token for CSRF protection
   const state = randomBytes(16).toString("hex");
 
   const jar = await cookies();
   jar.set("gmail_oauth_state", state, {
     httpOnly: true,
+    secure:   IS_PROD,
     sameSite: "lax",
     maxAge:   600, // 10 minutes
     path:     "/",

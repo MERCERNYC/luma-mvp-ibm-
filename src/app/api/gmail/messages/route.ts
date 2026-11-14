@@ -6,8 +6,9 @@
    already expects.
 
    Auth:
-     Reads the "gmail_tokens" HttpOnly cookie written by the
-     /api/auth/gmail/callback route.  Returns 401 when absent.
+     Reads Gmail tokens from the iron-session encrypted cookie
+     written by the /api/auth/gmail/callback route.
+     Returns 401 when absent.
 
    Query params:
      maxResults — number of messages to fetch (default 20, max 50)
@@ -24,9 +25,9 @@
      500 — Gmail API error
    ═══════════════════════════════════════════════════════════════ */
 
-import { NextRequest, NextResponse } from "next/server";
-import { cookies }                   from "next/headers";
-import type { GmailTokens }          from "@/app/api/auth/gmail/callback/route";
+import { NextRequest, NextResponse }     from "next/server";
+import { getSession }                    from "@/lib/session";
+import type { GmailTokens }              from "@/app/api/auth/gmail/callback/route";
 import {
   gmailMessageToClassifyInput,
   type GmailMessage,
@@ -36,10 +37,16 @@ const GMAIL_API = "https://gmail.googleapis.com/gmail/v1";
 
 // ── Token helpers ────────────────────────────────────────────────
 
-async function getAccessToken(tokens: GmailTokens): Promise<string> {
+/**
+ * Returns the current access token (or a refreshed one) and an updated
+ * GmailTokens object so the caller can persist it back to the session.
+ */
+async function getAccessToken(
+  tokens: GmailTokens,
+): Promise<{ accessToken: string; updatedTokens: GmailTokens }> {
   // If the access token hasn't expired yet (with 60 s buffer), use it.
   if (tokens.expiry_date - Date.now() > 60_000) {
-    return tokens.access_token;
+    return { accessToken: tokens.access_token, updatedTokens: tokens };
   }
 
   // Refresh the access token
@@ -51,7 +58,7 @@ async function getAccessToken(tokens: GmailTokens): Promise<string> {
     method:  "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      client_id:     process.env.GOOGLE_CLIENT_ID    ?? "",
+      client_id:     process.env.GOOGLE_CLIENT_ID     ?? "",
       client_secret: process.env.GOOGLE_CLIENT_SECRET ?? "",
       refresh_token: tokens.refresh_token,
       grant_type:    "refresh_token",
@@ -65,32 +72,37 @@ async function getAccessToken(tokens: GmailTokens): Promise<string> {
     expires_in:   number;
   };
 
-  return data.access_token;
+  const updatedTokens: GmailTokens = {
+    access_token:  data.access_token,
+    refresh_token: tokens.refresh_token, // unchanged — Google only issues one
+    expiry_date:   Date.now() + data.expires_in * 1000,
+  };
+
+  return { accessToken: data.access_token, updatedTokens };
 }
 
 // ── Route handler ────────────────────────────────────────────────
 
 export async function GET(request: NextRequest) {
-  const jar          = await cookies();
-  const tokensCookie = jar.get("gmail_tokens")?.value;
+  const session = await getSession();
+  const tokens  = session.gmailTokens;
 
-  if (!tokensCookie) {
+  if (!tokens) {
     return NextResponse.json({ error: "not_authenticated" }, { status: 401 });
   }
 
-  let tokens: GmailTokens;
-  try {
-    tokens = JSON.parse(tokensCookie) as GmailTokens;
-  } catch {
-    return NextResponse.json({ error: "invalid_token_cookie" }, { status: 401 });
-  }
-
   let accessToken: string;
+  let updatedTokens: GmailTokens;
   try {
-    accessToken = await getAccessToken(tokens);
+    ({ accessToken, updatedTokens } = await getAccessToken(tokens));
   } catch {
     return NextResponse.json({ error: "token_expired" }, { status: 401 });
   }
+
+  // Write the (possibly refreshed) token back so the next request
+  // does not need to hit the token endpoint again.
+  session.gmailTokens = updatedTokens;
+  await session.save();
 
   // ── Parse maxResults param ───────────────────────────────────
   const raw        = request.nextUrl.searchParams.get("maxResults");

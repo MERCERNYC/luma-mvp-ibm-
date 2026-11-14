@@ -1,30 +1,17 @@
 /* ═══════════════════════════════════════════════════════════════
    GET /api/auth/gmail/status
    ───────────────────────────────────────────────────────────────
-   Returns whether the current session has valid Gmail tokens.
-   The gmail_tokens cookie is HttpOnly — client components cannot
-   read it directly, so they call this route instead.
+   Returns whether the current user has a valid Gmail session.
 
-   Response (always 200):
-     { connected: true }   — gmail_tokens cookie present + parseable
-     { connected: false }  — cookie absent or unparseable
+   Response (200 JSON):
+     { connected: true }   — session exists and contains tokens
+     { connected: false }  — no session / no tokens
    ═══════════════════════════════════════════════════════════════ */
 
 import { NextResponse } from "next/server";
-import { cookies }      from "next/headers";
+import { getSession }   from "@/lib/session";
 
 export async function GET() {
-  const jar = await cookies();
-  const raw = jar.get("gmail_tokens")?.value;
-
-  if (!raw) {
-    return NextResponse.json({ connected: false });
-  }
-
-  try {
-    JSON.parse(raw);
-    return NextResponse.json({ connected: true });
-  } catch {
-    return NextResponse.json({ connected: false });
-  }
+  const session = await getSession();
+  return NextResponse.json({ connected: !!session.gmailTokens });
 }
