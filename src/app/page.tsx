@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { Target, ChevronDown, ChevronUp, Sparkles, RefreshCw } from "lucide-react";
+import { Target, ChevronDown, ChevronUp, Sparkles, RefreshCw, ListChecks, Clock3, Newspaper } from "lucide-react";
 import { AppShell }               from "@/components/layout/AppShell";
 import { EmailRow }               from "@/components/email/EmailRow";
 import { EmailPane }              from "@/components/email/EmailPane";
@@ -61,26 +61,54 @@ interface SummaryCardProps {
 function SummaryCard({
   icon, label, count, accent, accentBg, isOpen, onClick,
 }: SummaryCardProps) {
+  const [hovered, setHovered] = useState(false);
+
+  /* Active = open OR hovered — drives lavender tint */
+  const lavender = "#8564DD";
+  const isActive = isOpen || hovered;
+
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={isOpen}
       aria-label={`${label}: ${count} emails`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocus={() => setHovered(true)}
+      onBlur={() => setHovered(false)}
       className="flex-1 rounded-[var(--radius-xl)] px-4 py-2.5 flex items-center gap-3 text-left
-        transition-all duration-150 focus-visible:outline focus-visible:outline-2
-        focus-visible:outline-[var(--luma-blue)] focus-visible:outline-offset-2"
+        focus-visible:outline focus-visible:outline-2
+        focus-visible:outline-offset-2"
       style={{
-        background: isOpen ? accentBg : "rgba(255,255,255,0.28)",
-        border:     isOpen
+        background:  isOpen
+          ? accentBg
+          : hovered
+            ? "rgba(133,100,221,0.07)"
+            : "rgba(255,255,255,0.28)",
+        border: isOpen
           ? `1.5px solid ${accent}55`
-          : "1px solid var(--luma-glass-border)",
+          : hovered
+            ? `1px solid rgba(133,100,221,0.35)`
+            : "1px solid var(--luma-glass-border)",
+        boxShadow: hovered && !isOpen
+          ? "0 2px 10px 0 rgba(133,100,221,0.12)"
+          : undefined,
         cursor: "pointer",
+        transition: "background 200ms ease, border 200ms ease, box-shadow 200ms ease",
+        /* Focus ring color matches lavender when hovered */
+        outlineColor: isActive ? lavender : "var(--luma-blue)",
       }}
     >
       {/* Icon */}
       <span
-        style={{ fontSize: 14, lineHeight: 1, opacity: isOpen ? 1 : 0.7, flexShrink: 0 }}
+        style={{
+          lineHeight: 1,
+          flexShrink: 0,
+          color: isActive ? lavender : "var(--luma-text-secondary)",
+          opacity: isOpen ? 1 : hovered ? 1 : 0.7,
+          transition: "color 200ms ease, opacity 200ms ease",
+        }}
         aria-hidden="true"
       >
         {icon}
@@ -89,7 +117,14 @@ function SummaryCard({
       {/* Label */}
       <span
         className="flex-1 min-w-0 truncate text-[var(--text-xs)] font-medium"
-        style={{ color: isOpen ? "var(--luma-text-primary)" : "var(--luma-text-secondary)" }}
+        style={{
+          color: isOpen
+            ? "var(--luma-text-primary)"
+            : hovered
+              ? lavender
+              : "var(--luma-text-secondary)",
+          transition: "color 200ms ease",
+        }}
       >
         {label}
       </span>
@@ -98,8 +133,17 @@ function SummaryCard({
       <span
         className="text-[var(--text-2xs)] font-semibold px-1.5 py-0.5 rounded-[var(--radius-full)] shrink-0"
         style={{
-          background: isOpen ? `${accent}20` : "rgba(100,140,200,0.12)",
-          color:      isOpen ? accent         : "var(--luma-text-tertiary)",
+          background: isOpen
+            ? `${accent}20`
+            : hovered
+              ? "rgba(133,100,221,0.15)"
+              : "rgba(100,140,200,0.12)",
+          color: isOpen
+            ? accent
+            : hovered
+              ? lavender
+              : "var(--luma-text-tertiary)",
+          transition: "background 200ms ease, color 200ms ease",
         }}
       >
         {count}
@@ -108,15 +152,19 @@ function SummaryCard({
       {/* Chevron */}
       <span
         style={{
-          color:     isOpen ? accent : "var(--luma-text-disabled)",
+          color: isOpen
+            ? accent
+            : hovered
+              ? lavender
+              : "var(--luma-text-disabled)",
           flexShrink: 0,
           lineHeight: 1,
+          transition: "color 200ms ease, transform 180ms ease",
+          transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
         }}
         aria-hidden="true"
       >
-        {isOpen
-          ? <ChevronUp   size={13} strokeWidth={2} />
-          : <ChevronDown size={13} strokeWidth={2} />}
+        <ChevronDown size={13} strokeWidth={2} />
       </span>
     </button>
   );
@@ -127,7 +175,7 @@ function SummaryCard({
 interface CategoryCardProps {
   category:   TaskPriority;
   label:      string;
-  icon:       string;
+  icon:       React.ReactNode;
   accent:     string;
   accentBg:   string;
   tasks:      Task[];
@@ -153,7 +201,7 @@ function CategoryCard({
       {/* Header */}
       <div className="flex items-center justify-between px-5 pt-4 pb-3">
         <div className="flex items-center gap-2">
-          <span aria-hidden="true" style={{ fontSize: 16, lineHeight: 1 }}>{icon}</span>
+          <span aria-hidden="true" style={{ lineHeight: 1, color: accent }}>{icon}</span>
           <h2
             className="text-[var(--text-base)] font-bold"
             style={{ color: "var(--luma-text-primary)" }}
@@ -206,6 +254,7 @@ function CategoryCard({
                 task={task}
                 isSelected={selected?.id === task.id}
                 onSelect={onSelect}
+                hidePriorityBadge={category === "action-needed" || category === "news-updates"}
               />
             </div>
           ))
@@ -218,15 +267,15 @@ function CategoryCard({
 // ── Lookup tables ────────────────────────────
 
 const CATEGORY_LABEL: Record<TaskPriority, string> = {
-  "action-needed": "Action Needed",
-  "for-later":     "Later",
-  "news-updates":  "FYI",
+  "action-needed": "Up Next",
+  "for-later":     "For Later",
+  "news-updates":  "Updates",
 };
 
-const CATEGORY_ICON: Record<TaskPriority, string> = {
-  "action-needed": "✉️",
-  "for-later":     "🕐",
-  "news-updates":  "📰",
+const CATEGORY_ICON: Record<TaskPriority, React.ReactNode> = {
+  "action-needed": <ListChecks size={18} strokeWidth={1.75} aria-hidden="true" />,
+  "for-later":     <Clock3     size={18} strokeWidth={1.75} aria-hidden="true" />,
+  "news-updates":  <Newspaper  size={18} strokeWidth={1.75} aria-hidden="true" />,
 };
 
 const CATEGORY_ACCENT: Record<TaskPriority, string> = {
@@ -272,6 +321,7 @@ export default function DashboardPage() {
     markDone,
     generation,
     prioritizeAgain,
+    clearDone,
   } = useDoneEmails();
 
   const [gmailError,     setGmailError]     = useState<string | null>(null);
@@ -294,7 +344,7 @@ export default function DashboardPage() {
     overrides[t.id] ? { ...t, priority: overrides[t.id] } : t,
   );
 
-  const { focusTasks, activeTasks, isCaughtUp, windowSize } = useFocusQueue(
+  const { focusTasks, activeTasks, isCaughtUp, windowSize, focusIds } = useFocusQueue(
     allTasks,
     doneIds,
     generation,
@@ -306,7 +356,7 @@ export default function DashboardPage() {
     .map((id) => allTasks.find((t) => t.id === id))
     .filter((t): t is Task => t !== undefined);
 
-  const actionCount = activeTasks.filter((t) => t.priority === "action-needed").length;
+  const actionCount = activeTasks.filter((t) => t.priority === "action-needed" && !focusIds.has(t.id)).length;
   const laterCount  = activeTasks.filter((t) => t.priority === "for-later").length;
   const newsCount   = activeTasks.filter((t) => t.priority === "news-updates").length;
 
@@ -358,6 +408,7 @@ export default function DashboardPage() {
 
   return (
     <AppShell
+      clearDone={clearDone}
       emailPane={
         activeTask
           ? (
@@ -558,7 +609,10 @@ export default function DashboardPage() {
               icon={CATEGORY_ICON[category]}
               accent={CATEGORY_ACCENT[category]}
               accentBg={CATEGORY_BG[category]}
-              tasks={activeTasks.filter((t) => t.priority === category)}
+              tasks={activeTasks.filter((t) =>
+                t.priority === category &&
+                !(category === "action-needed" && focusIds.has(t.id))
+              )}
               selected={selected}
               onSelect={setSelected}
               onClose={() => closeCategory(category)}
@@ -570,8 +624,8 @@ export default function DashboardPage() {
       {/* ── Summary tiles ────────────────────────── */}
       <div className="flex gap-3">
         <SummaryCard
-          icon={<span style={{ fontSize: 14 }}>✉️</span>}
-          label="Action Needed"
+          icon={<ListChecks size={18} strokeWidth={1.75} />}
+          label="Up Next"
           count={status === "ready" ? actionCount : 0}
           accent="var(--luma-action)"
           accentBg="var(--luma-action-soft)"
@@ -579,8 +633,8 @@ export default function DashboardPage() {
           onClick={() => toggleCategory("action-needed")}
         />
         <SummaryCard
-          icon={<span style={{ fontSize: 14 }}>🕐</span>}
-          label="Later"
+          icon={<Clock3 size={18} strokeWidth={1.75} />}
+          label="For Later"
           count={status === "ready" ? laterCount : 0}
           accent="var(--luma-later)"
           accentBg="var(--luma-later-soft)"
@@ -588,8 +642,8 @@ export default function DashboardPage() {
           onClick={() => toggleCategory("for-later")}
         />
         <SummaryCard
-          icon={<span style={{ fontSize: 14 }}>📰</span>}
-          label="FYI"
+          icon={<Newspaper size={18} strokeWidth={1.75} />}
+          label="Updates"
           count={status === "ready" ? newsCount : 0}
           accent="var(--luma-blue)"
           accentBg="var(--luma-blue-soft)"
@@ -604,7 +658,7 @@ export default function DashboardPage() {
         style={{ color: "var(--luma-text-tertiary)" }}
       >
         {status === "ready"
-          ? `Sorted by urgency · Action Needed → Later → FYI · ${emailSource === "gmail" ? "Gmail inbox" : "Sample emails"}`
+          ? `Sorted by urgency · Up Next → For Later → Updates · ${emailSource === "gmail" ? "Gmail inbox" : "Sample emails"}`
           : "Sorting by urgency…"}
       </p>
     </AppShell>

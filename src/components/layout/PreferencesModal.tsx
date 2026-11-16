@@ -18,15 +18,16 @@
    ───────────────────────────────────────────────────────────────── */
 
 import { useEffect, useState, useCallback } from "react";
-import { X, Mail, CheckCircle2, Loader2, LogOut } from "lucide-react";
+import { X, Mail, CheckCircle2, Loader2, LogOut, RotateCcw } from "lucide-react";
 
 type GmailStatus = "checking" | "connected" | "disconnected" | "disconnecting";
 
 interface PreferencesModalProps {
-  onClose: () => void;
+  onClose:   () => void;
+  clearDone: () => void;
 }
 
-export function PreferencesModal({ onClose }: PreferencesModalProps) {
+export function PreferencesModal({ onClose, clearDone }: PreferencesModalProps) {
   const [gmailStatus, setGmailStatus] = useState<GmailStatus>("checking");
 
   // Check connection status whenever the modal opens.
@@ -235,6 +236,41 @@ export function PreferencesModal({ onClose }: PreferencesModalProps) {
                 </p>
               </div>
             )}
+          </section>
+
+          {/* ── Session section ────────────────────────── */}
+          <section aria-label="Session">
+            <div className="flex items-center gap-2 mb-3">
+              <RotateCcw size={14} strokeWidth={1.5} style={{ color: "var(--luma-text-tertiary)" }} aria-hidden="true" />
+              <span
+                className="text-[var(--text-xs)] font-semibold uppercase tracking-wide"
+                style={{ color: "var(--luma-text-tertiary)", letterSpacing: "0.08em" }}
+              >
+                Session
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => { clearDone(); onClose(); }}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-[var(--radius-xl)]
+                text-[var(--text-sm)] font-medium transition-all duration-100
+                hover:opacity-85 active:scale-[0.98]
+                focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--luma-blue)]"
+              style={{
+                background: "var(--luma-glass-raised)",
+                border:     "1px solid var(--luma-glass-border)",
+                color:      "var(--luma-text-secondary)",
+              }}
+            >
+              <RotateCcw size={13} strokeWidth={2} aria-hidden="true" />
+              Reset inbox
+            </button>
+            <p
+              className="mt-2 text-[var(--text-xs)] text-center"
+              style={{ color: "var(--luma-text-tertiary)" }}
+            >
+              Clears completed emails and rebuilds Focus Now
+            </p>
           </section>
 
         </div>

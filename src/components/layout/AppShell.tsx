@@ -9,12 +9,13 @@ import { Header } from "@/components/layout/Header";
 interface AppShellProps {
   children:   React.ReactNode;
   emailPane?: React.ReactNode;
+  clearDone:  () => void;
 }
 
-export function AppShell({ children, emailPane }: AppShellProps) {
+export function AppShell({ children, emailPane, clearDone }: AppShellProps) {
   return (
     <div className="flex flex-col" style={{ height: "100dvh" }}>
-      <Header />
+      <Header clearDone={clearDone} />
 
       {/* flex-1 + min-h-0 gives this row a real pixel height = viewport minus header */}
       <div className="flex flex-1 min-h-0 overflow-hidden">

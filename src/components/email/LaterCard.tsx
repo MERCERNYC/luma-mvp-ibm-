@@ -38,7 +38,7 @@ const ACCENT      = "var(--luma-later)";        // amber token
 const ACCENT_SOFT = "rgba(217,119,6,0.05)";
 
 export function LaterCard({ tasks, selected, onSelect, onClose }: LaterCardProps) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   const nextTask = tasks[0] ?? null;
 

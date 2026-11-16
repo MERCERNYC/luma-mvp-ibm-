@@ -54,12 +54,14 @@ const AVATAR_COLOR: Record<Task["avatarColor"], string> = {
 };
 
 export interface EmailRowProps {
-  task:       Task;
-  isSelected: boolean;
-  onSelect:   (task: Task) => void;
+  task:              Task;
+  isSelected:        boolean;
+  onSelect:          (task: Task) => void;
+  /** When true, the priority badge (Action/Urgent/Later/News) is hidden. */
+  hidePriorityBadge?: boolean;
 }
 
-export function EmailRow({ task, isSelected, onSelect }: EmailRowProps) {
+export function EmailRow({ task, isSelected, onSelect, hidePriorityBadge }: EmailRowProps) {
   const tag = getPillConfig(task.priority, task.urgencyScore);
 
   return (
@@ -100,12 +102,14 @@ export function EmailRow({ task, isSelected, onSelect }: EmailRowProps) {
             {task.sender}
           </span>
           <div className="flex items-center gap-2 shrink-0">
-            <span
-              className="px-2.5 py-0.5 rounded-[var(--radius-full)] text-[var(--text-xs)] font-semibold"
-              style={{ background: tag.bg, color: tag.color }}
-            >
-              {tag.label}
-            </span>
+            {!hidePriorityBadge && (
+              <span
+                className="px-2.5 py-0.5 rounded-[var(--radius-full)] text-[var(--text-xs)] font-semibold"
+                style={{ background: tag.bg, color: tag.color }}
+              >
+                {tag.label}
+              </span>
+            )}
             <span
               className="text-[var(--text-xs)] tabular-nums"
               style={{ color: "var(--luma-text-tertiary)" }}

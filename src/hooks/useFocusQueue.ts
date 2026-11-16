@@ -60,6 +60,12 @@ export interface UseFocusQueueResult {
    * May be less than FOCUS_LIMIT when the inbox has fewer qualifying emails.
    */
   windowSize:  number;
+  /**
+   * IDs of the tasks currently displayed in Focus Now.
+   * Used by callers to exclude these from the Up Next category card
+   * so the same email never appears in both sections.
+   */
+  focusIds: Set<string>;
 }
 
 export function useFocusQueue(
@@ -122,5 +128,9 @@ export function useFocusQueue(
     windowBuilt &&
     (windowIds.length === 0 || windowIds.every((id) => doneIds.has(id)));
 
-  return { focusTasks, activeTasks, isCaughtUp, windowSize: windowIds.length };
+  // The set of IDs currently visible in Focus Now — callers use this to
+  // exclude those tasks from Up Next, preventing duplicate display.
+  const focusIds = new Set(focusTasks.map((t) => t.id));
+
+  return { focusTasks, activeTasks, isCaughtUp, windowSize: windowIds.length, focusIds };
 }

@@ -38,6 +38,29 @@
      urgent → action-needed   action → action-needed
      later  → for-later       news   → news-updates
 
+   URGENCY SCORE (Option A — derived from raw priority)
+   ──────────────────────────────────────────────────────
+   The agent does not return an urgencyScore field.  We derive it from
+   the raw priority string BEFORE it is normalised to TaskPriority, so
+   the urgent/action distinction is preserved for within-bucket sorting:
+
+     urgent → 0.9  (same-day / next-day deadline implied by agent choice)
+     action → 0.75 (meaningful deadline, not same-day)
+     later  → 0.5  (personally relevant, no deadline — per-spec default)
+     news   → 0.3  (informational — per-spec default)
+
+   Tier values are taken directly from the documented scale in types.ts.
+   No deadline text is inspected; no facts are invented.
+
+   FUTURE: Option B — per-email urgency from agent
+   ────────────────────────────────────────────────
+   Add an "urgencyScore" field to the Orchestrate system prompt and parse
+   it here via coerceNumber(obj.urgencyScore, fallback).  This would let
+   the agent distinguish a fraud alert (1.0) from a school-trip permission
+   slip (0.9) within the same "urgent" bucket — finer-grained than the
+   two-tier split Option A provides.  Requires a system-prompt update and
+   re-evaluation against the 50-email dataset before enabling.
+
    ENV VARS  (all required when AGENT_PROVIDER=watsonx)
    ──────────────────────────────────────────────────────
    WATSONX_API_KEY              IBM Cloud API key (IAM-API_KEY auth)
@@ -139,6 +162,21 @@ function extractJSON(raw: string): unknown {
   return JSON.parse(candidate.slice(start, end + 1));
 }
 
+// ─── urgencyScore from raw agent priority ─────────────────────────
+// Called BEFORE coercePriority() so the urgent/action distinction is
+// still available.  Values match the documented tier scale in types.ts.
+
+function urgencyScoreFromPriority(raw: unknown): number {
+  if (typeof raw !== "string") return 0.5;
+  switch (raw.toLowerCase().trim()) {
+    case "urgent": return 0.9;
+    case "action": return 0.75;
+    case "later":  return 0.5;
+    case "news":   return 0.3;
+    default:       return 0.5;
+  }
+}
+
 // ─── Field validators (safe coercion with fallbacks) ──────────────
 
 // Agent priority values → LUMA internal TaskPriority
@@ -235,8 +273,12 @@ export class WatsonxAgent implements IAgent {
     const raw    = await callAgent(this.instanceUrl, this.agentId, this.apiKey, prompt);
     const obj    = extractJSON(raw) as Record<string, unknown>;
 
+    // Read the raw priority string once so urgencyScore can use it
+    // before coercePriority() normalises it to a TaskPriority.
+    const rawPriority = obj.priority;
+
     return {
-      priority:          coercePriority(obj.priority),
+      priority:          coercePriority(rawPriority),
       emailType:         coerceEmailType(obj.emailType),
       requiresAction:    coerceBoolean(obj.requiresAction),
       reason:            coerceString(obj.reason,            "No reason provided."),
@@ -244,7 +286,7 @@ export class WatsonxAgent implements IAgent {
                            ? obj.recommendedAction
                            : null,
       confidence:        coerceNumber(obj.confidence,    0.5),
-      urgencyScore:      0.5,
+      urgencyScore:      urgencyScoreFromPriority(rawPriority),
       reasoning:         "",
     };
   }

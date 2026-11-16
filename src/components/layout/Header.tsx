@@ -1,6 +1,7 @@
 "use client";
 
 import Image                     from "next/image";
+import Link                      from "next/link";
 import { useState }              from "react";
 import { Bell, Settings2 }       from "lucide-react";
 import { PreferencesModal }      from "@/components/layout/PreferencesModal";
@@ -12,7 +13,11 @@ import { PreferencesModal }      from "@/components/layout/PreferencesModal";
    Right: LUMA Preferences button · bell · avatar
    ───────────────────────────────────────────── */
 
-export function Header() {
+interface HeaderProps {
+  clearDone: () => void;
+}
+
+export function Header({ clearDone }: HeaderProps) {
   const [prefsOpen, setPrefsOpen] = useState(false);
 
   return (
@@ -21,16 +26,16 @@ export function Header() {
       style={{ borderBottom: "1px solid var(--luma-glass-border)" }}
     >
       {/* Left — logo */}
-      <div className="flex items-center">
+      <Link href="/" aria-label="Go to dashboard">
         <Image
           src="/images/luma-logo.png"
           alt="Luma — Less inbox. More life."
-          width={160}
-          height={56}
+          width={200}
+          height={70}
           priority
-          style={{ objectFit: "contain", height: 44, width: "auto" }}
+          style={{ objectFit: "contain", height: 56, width: "auto" }}
         />
-      </div>
+      </Link>
 
       {/* Right — actions */}
       <div className="flex items-center gap-2">
@@ -56,7 +61,7 @@ export function Header() {
         </button>
 
         {prefsOpen && (
-          <PreferencesModal onClose={() => setPrefsOpen(false)} />
+          <PreferencesModal onClose={() => setPrefsOpen(false)} clearDone={clearDone} />
         )}
 
         {/* Bell */}

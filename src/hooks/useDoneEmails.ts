@@ -64,6 +64,11 @@ export interface UseDoneEmailsResult {
    */
   generation:      number;
   prioritizeAgain: () => void;
+  /**
+   * Clears all done IDs and bumps generation so Focus Now redraws
+   * from scratch.  Used by "Reset inbox" in LUMA Preferences.
+   */
+  clearDone: () => void;
 }
 
 // ── Hook ─────────────────────────────────────────────────────────
@@ -96,5 +101,11 @@ export function useDoneEmails(): UseDoneEmailsResult {
     setGeneration((g) => g + 1);
   }, []);
 
-  return { doneIds, markDone, generation, prioritizeAgain };
+  const clearDone = useCallback(() => {
+    setDoneIds(new Set());
+    writeDoneIds(new Set());
+    setGeneration((g) => g + 1); // redraw Focus Now window immediately
+  }, []);
+
+  return { doneIds, markDone, generation, prioritizeAgain, clearDone };
 }
