@@ -140,6 +140,11 @@ async function fetchGmailEmails(): Promise<{
 
 // ─── Hook ────────────────────────────────────────────────────────
 
+// How many emails to classify in the first (fast) batch.
+// These cover Focus Now (max 5) plus enough for the category cards.
+// The rest are classified in a background second pass.
+const FIRST_BATCH = 20;
+
 export function useClassifiedEmails(): UseClassifiedEmailsResult {
   const [status,      setStatus]      = useState<ClassificationStatus>("loading");
   const [tasks,       setTasks]       = useState<Task[]>([]);
@@ -153,80 +158,140 @@ export function useClassifiedEmails(): UseClassifiedEmailsResult {
     async function run() {
       try {
         // ── 1. Resolve email source ───────────────────────────────
-        let classifyInputs: ClassifyInput[];
-        let inbox:          Task[];
-        let source:         EmailSource;
+        let allInputs: ClassifyInput[];
+        let inbox:     Task[];
+        let source:    EmailSource;
 
         const gmail = await fetchGmailEmails();
 
         if (gmail) {
-          classifyInputs = gmail.inputs;
-          inbox          = gmail.inbox;
-          source         = "gmail";
+          allInputs = gmail.inputs;
+          inbox     = gmail.inbox;
+          source    = "gmail";
         } else {
-          // Fall back to the 50-email evaluation dataset
-          classifyInputs = WATSON_EVAL_EMAILS.map(toClassifyInput);
-          inbox          = evalEmailsToTasks(WATSON_EVAL_EMAILS);
-          source         = "dataset";
+          allInputs = WATSON_EVAL_EMAILS.map(toClassifyInput);
+          inbox     = evalEmailsToTasks(WATSON_EVAL_EMAILS);
+          source    = "dataset";
         }
 
-        // ── 2. Classify all emails via the API route ──────────────
-        const classifyResponse = await fetch("/api/agent/classify", {
+        // ── 2a. Classify first FIRST_BATCH emails ─────────────────
+        // This renders Focus Now and category cards fast.
+        // The remaining emails are classified in the background (step 4).
+        const firstInputs = allInputs.slice(0, FIRST_BATCH);
+
+        const firstResponse = await fetch("/api/agent/classify", {
           method:  "POST",
           headers: { "Content-Type": "application/json" },
-          body:    JSON.stringify({ emails: classifyInputs }),
+          body:    JSON.stringify({ emails: firstInputs }),
         });
 
-        if (!classifyResponse.ok) throw new Error("classify request failed");
+        if (!firstResponse.ok) throw new Error("classify request failed");
 
-        const { results }: { results: ClassifyResult[] } =
-          await classifyResponse.json();
+        const { results: firstResults }: { results: ClassifyResult[] } =
+          await firstResponse.json();
 
         if (cancelled) return;
 
-        // ── 3. Merge agent results back onto Task objects ─────────
-        const mergedTasks: Task[] = inbox.map((task, i) => ({
+        // ── 2b. Merge + sort the first batch ──────────────────────
+        const firstMerged: Task[] = inbox.slice(0, FIRST_BATCH).map((task, i) => ({
           ...task,
-          priority:          results[i].priority,
-          reason:            results[i].reason,
-          recommendedAction: results[i].recommendedAction,
-          urgencyScore:      results[i].urgencyScore,
+          priority:          firstResults[i].priority,
+          reason:            firstResults[i].reason,
+          recommendedAction: firstResults[i].recommendedAction,
+          urgencyScore:      firstResults[i].urgencyScore,
         }));
 
-        // ── 4. Sort: bucket → urgencyScore desc → receivedAt desc ─
-        const classifiedTasks = sortByPriority(mergedTasks, results);
+        // Remaining emails get default priority until background pass finishes
+        const restInbox = inbox.slice(FIRST_BATCH);
+        const restPlaceholders: Task[] = restInbox.map((task) => ({
+          ...task,
+          priority:    "news-updates" as const,
+          urgencyScore: 0.3,
+        }));
 
-        // Build urgencyScore lookup keyed by task id
+        const allResults = [...firstResults];
+        const restPlaceholderResults: ClassifyResult[] = restInbox.map(() => ({
+          priority:          "news-updates" as const,
+          emailType:         "notification" as const,
+          requiresAction:    false,
+          reason:            "",
+          recommendedAction: null,
+          confidence:        0,
+          urgencyScore:      0.3,
+          reasoning:         "",
+        }));
+        allResults.push(...restPlaceholderResults);
+
+        const allMerged = [...firstMerged, ...restPlaceholders];
+        const sortedTasks = sortByPriority(allMerged, allResults);
+
         const urgencyMap: UrgencyMap = {};
-        inbox.forEach((task, i) => {
-          urgencyMap[task.id] = results[i].urgencyScore;
+        allMerged.forEach((task, i) => {
+          urgencyMap[task.id] = allResults[i].urgencyScore;
         });
 
-        // ── 5. Generate the daily brief ───────────────────────────
-        const briefResponse = await fetch("/api/agent/daily-brief", {
+        // ── 2c. Show the dashboard now — don't wait for brief ─────
+        setTasks(sortedTasks);
+        setUrgencies(urgencyMap);
+        setEmailSource(source);
+        setStatus("ready");
+
+        // ── 3. Daily brief — fires after dashboard is visible ─────
+        // No await blocking the user; updates briefText when done.
+        fetch("/api/agent/daily-brief", {
           method:  "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             userName: GREETING_NAME,
-            emails: classifiedTasks.map((t) => ({
+            emails: sortedTasks.slice(0, 10).map((t) => ({
               subject:  t.subject,
               priority: t.priority,
               sender:   t.sender,
             })),
           }),
-        });
+        })
+          .then((r) => r.ok ? r.json() : null)
+          .then((data: DailyBriefResult | null) => {
+            if (!cancelled && data?.text) setBriefText(data.text);
+          })
+          .catch(() => { /* brief is non-critical — silent fail */ });
 
-        if (!briefResponse.ok) throw new Error("daily-brief request failed");
+        // ── 4. Background: classify remaining emails ──────────────
+        if (allInputs.length > FIRST_BATCH) {
+          const restInputs = allInputs.slice(FIRST_BATCH);
 
-        const { text }: DailyBriefResult = await briefResponse.json();
+          fetch("/api/agent/classify", {
+            method:  "POST",
+            headers: { "Content-Type": "application/json" },
+            body:    JSON.stringify({ emails: restInputs }),
+          })
+            .then((r) => r.ok ? r.json() : null)
+            .then((data: { results: ClassifyResult[] } | null) => {
+              if (cancelled || !data?.results) return;
 
-        if (cancelled) return;
+              const restMerged: Task[] = restInbox.map((task, i) => ({
+                ...task,
+                priority:          data.results[i].priority,
+                reason:            data.results[i].reason,
+                recommendedAction: data.results[i].recommendedAction,
+                urgencyScore:      data.results[i].urgencyScore,
+              }));
 
-        setTasks(classifiedTasks);
-        setUrgencies(urgencyMap);
-        setBriefText(text);
-        setEmailSource(source);
-        setStatus("ready");
+              const fullResults = [...firstResults, ...data.results];
+              const fullMerged  = [...firstMerged, ...restMerged];
+              const fullSorted  = sortByPriority(fullMerged, fullResults);
+
+              const fullUrgencies: UrgencyMap = {};
+              fullMerged.forEach((task, i) => {
+                fullUrgencies[task.id] = fullResults[i].urgencyScore;
+              });
+
+              setTasks(fullSorted);
+              setUrgencies(fullUrgencies);
+            })
+            .catch(() => { /* background pass failed — first batch still showing */ });
+        }
+
       } catch {
         if (!cancelled) setStatus("error");
       }

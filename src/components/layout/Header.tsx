@@ -14,38 +14,60 @@ import { PreferencesModal }      from "@/components/layout/PreferencesModal";
    ───────────────────────────────────────────── */
 
 interface HeaderProps {
-  clearDone: () => void;
+  clearDone:    () => void;
+  /** When provided, clicking the logo calls this instead of navigating to "/". */
+  onLogoClick?: () => void;
 }
 
-export function Header({ clearDone }: HeaderProps) {
+export function Header({ clearDone, onLogoClick }: HeaderProps) {
   const [prefsOpen, setPrefsOpen] = useState(false);
 
   return (
     <header
-      className="flex items-center justify-between px-8 py-3"
+      className="flex items-center justify-between px-4 py-3 md:px-8"
       style={{ borderBottom: "1px solid var(--luma-glass-border)" }}
     >
-      {/* Left — logo */}
-      <Link href="/" aria-label="Go to dashboard">
-        <Image
-          src="/images/luma-logo.png"
-          alt="Luma — Less inbox. More life."
-          width={200}
-          height={70}
-          priority
-          style={{ objectFit: "contain", height: 56, width: "auto" }}
-        />
-      </Link>
+      {/* Left — logo. When onLogoClick is provided (e.g. Gmail disconnected),
+          clicking navigates back to the entry/welcome page. */}
+      {onLogoClick ? (
+        <button
+          type="button"
+          onClick={onLogoClick}
+          aria-label="Return to welcome page"
+          className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--luma-blue)]
+            focus-visible:outline-offset-2 rounded-[var(--radius-sm)]"
+        >
+          <Image
+            src="/images/luma-logo.png"
+            alt="Luma — Less inbox. More life."
+            width={200}
+            height={70}
+            priority
+            style={{ objectFit: "contain", height: 48, width: "auto" }}
+          />
+        </button>
+      ) : (
+        <Link href="/" aria-label="Go to dashboard">
+          <Image
+            src="/images/luma-logo.png"
+            alt="Luma — Less inbox. More life."
+            width={200}
+            height={70}
+            priority
+            style={{ objectFit: "contain", height: 48, width: "auto" }}
+          />
+        </Link>
+      )}
 
       {/* Right — actions */}
       <div className="flex items-center gap-2">
-        {/* Preferences pill button */}
+        {/* Preferences pill button — icon only on mobile, label on sm+ */}
         <button
           type="button"
           onClick={() => setPrefsOpen((v) => !v)}
           aria-haspopup="dialog"
           aria-expanded={prefsOpen}
-          className="flex items-center gap-2 px-4 py-2 rounded-[var(--radius-full)]
+          className="flex items-center gap-2 px-3 py-2 rounded-[var(--radius-full)]
             text-[var(--text-sm)] font-medium transition-colors duration-100
             hover:bg-[rgba(37,99,235,0.07)]
             focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--luma-blue)]"
@@ -57,7 +79,7 @@ export function Header({ clearDone }: HeaderProps) {
           aria-label="LUMA Preferences"
         >
           <Settings2 size={15} strokeWidth={1.5} aria-hidden="true" />
-          LUMA Preferences
+          <span className="hidden sm:inline">LUMA Preferences</span>
         </button>
 
         {prefsOpen && (
@@ -76,7 +98,7 @@ export function Header({ clearDone }: HeaderProps) {
           <Bell size={17} strokeWidth={1.5} aria-hidden="true" />
         </button>
 
-        {/* Avatar */}
+        {/* Avatar — hide name text on mobile */}
         <div className="flex items-center gap-2">
           <div
             className="w-9 h-9 rounded-[var(--radius-full)] flex items-center justify-center
@@ -88,12 +110,12 @@ export function Header({ clearDone }: HeaderProps) {
             S
           </div>
           <span
-            className="text-[var(--text-sm)] font-medium"
+            className="hidden sm:inline text-[var(--text-sm)] font-medium"
             style={{ color: "var(--luma-text-primary)" }}
           >
             Sofia
           </span>
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" className="hidden sm:block">
             <path d="M2 4l4 4 4-4" stroke="var(--luma-text-tertiary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </div>

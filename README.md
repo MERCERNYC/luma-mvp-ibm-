@@ -16,6 +16,8 @@
 
 **[→ Live Demo: luma-v2-ibm.vercel.app](https://luma-v2-ibm.vercel.app)**
 
+> ⚠️ **Use demo data only** — do not connect a real Gmail account on the live demo.
+
 </div>
 
 ---

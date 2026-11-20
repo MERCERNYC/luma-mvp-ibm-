@@ -248,7 +248,7 @@ export function EmailPane({ task, onClose, onDone, onPriorityChange }: EmailPane
 
         {/* Subject */}
         <h1
-          className="text-[var(--text-xl)] font-bold leading-snug"
+          className="text-[var(--text-lg)] font-bold leading-snug"
           style={{ color: "var(--luma-text-primary)" }}
         >
           {task.subject}

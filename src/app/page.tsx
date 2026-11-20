@@ -16,6 +16,145 @@ import { useFeedback }            from "@/hooks/useFeedback";
 import type { Task, TaskPriority } from "@/types/dashboard";
 
 /* ─────────────────────────────────────────────
+   deriveFocusReason
+   ─────────────────────────────────────────────
+   Converts agent data (reason, recommendedAction,
+   urgencyScore) into the short label + tooltip
+   shown in Focus Now rows.
+
+   Rules (in priority order):
+   1. Scan reason text for deadline/date keywords
+      → "⏱ Due …" or "📅 …"
+   2. Scan reason for payment/invoice keywords
+      → "$ Payment due"
+   3. Scan reason for reply/respond keywords
+      → "↩ Needs reply"
+   4. urgencyScore ≥ 0.85  → "⚠ Time sensitive"
+   5. requiresAction true   → "✓ Action required"
+   6. Fallback              → "↗ Needs attention"
+
+   The whyText is the agent's own reason string
+   (cleaned up), so it is never hard-coded per email.
+   ───────────────────────────────────────────── */
+
+function deriveFocusReason(task: Task): {
+  label:    string;
+  whyText:  string;
+  nextStep: string | null;
+} {
+  const reason   = task.reason ?? "";
+  const reasonLC = reason.toLowerCase();
+  const whyText  = reason || "This email requires your attention.";
+  const nextStep = task.recommendedAction ?? null;
+  const score    = task.urgencyScore ?? 0.75;
+
+  // ── helpers ───────────────────────────────────
+  // Month name pattern used in several regexes
+  const MON = "jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec";
+
+  // ── 1. Calendar / appointment ────────────────
+  // e.g. "appointments on 11/19", "meeting tomorrow"
+  const calendarMatch =
+    /\b(appointment|meeting|call|event|visit)s?\b.*?\b(today|tomorrow|this week)\b/i.exec(reason) ??
+    /\b(appointment|meeting|call|event|visit)s?\b.*?\b(\d{1,2}[\/\-]\d{1,2})\b/i.exec(reason);
+  if (calendarMatch) {
+    return { label: `📅 ${calendarMatch[1]} ${calendarMatch[2]}`, whyText, nextStep };
+  }
+
+  // ── 2. Deadline signal detection ─────────────
+  // Broad trigger: any of these words/patterns in the reason
+  const hasDeadline =
+    /\b(due|deadline|expires?|must (submit|enroll|complete|update|act)|lose (coverage|access))\b/i.test(reasonLC) ||
+    /\b(by|before|until)\s+(today|tomorrow|[a-z]+ \d|\d{1,2}[\/\-]\d)/i.test(reasonLC) ||
+    /\bin \d+ days?\b/i.test(reasonLC) ||
+    /\bthis week\b/i.test(reasonLC) ||
+    /\b\d{1,2}[\/\-]\d{1,2}\b/.test(reasonLC) ||
+    new RegExp(`\\b(${MON})\\b`, "i").test(reasonLC);
+
+  if (hasDeadline) {
+    // ── Specific label extraction (most precise first) ──
+
+    // "due today by 4:00 PM" / "due today"
+    if (/\b(due|before|by)\b.{0,20}?\btoday\b/i.test(reason)) {
+      // try to extract a time
+      const timeMatch = /\b(\d{1,2}:\d{2}\s*(?:am|pm)?)\b/i.exec(reason);
+      return { label: timeMatch ? `⏱ Due today at ${timeMatch[1]}` : "⏱ Due today", whyText, nextStep };
+    }
+
+    // "due tomorrow"
+    if (/\b(due|before|by)\b.{0,20}?\btomorrow\b/i.test(reason)) {
+      return { label: "⏱ Due tomorrow", whyText, nextStep };
+    }
+
+    // "in N days" (matches "deadline is in 4 days", "due in 4 days")
+    const inDaysMatch = /\bin (\d+) days?\b/i.exec(reason);
+    if (inDaysMatch) {
+      return { label: `⏱ Due in ${inDaysMatch[1]} days`, whyText, nextStep };
+    }
+
+    // "by Dec 15" / "enroll by Dec 15" / "before Nov 22"
+    const byMonthMatch = new RegExp(
+      `\\b(?:by|before|until)\\s+(?:[a-z\\s]+?)?\\b((?:${MON})\\.?\\s+\\d{1,2}(?:st|nd|rd|th)?)\\b`,
+      "i",
+    ).exec(reason);
+    if (byMonthMatch) {
+      return { label: `⏱ Due ${byMonthMatch[1]}`, whyText, nextStep };
+    }
+
+    // "November 22" / "Nov 22" standing alone
+    const monthDayMatch = new RegExp(
+      `\\b((?:${MON})[a-z]*\\.?\\s+\\d{1,2}(?:st|nd|rd|th)?)\\b`,
+      "i",
+    ).exec(reason);
+    if (monthDayMatch) {
+      return { label: `⏱ Due ${monthDayMatch[1]}`, whyText, nextStep };
+    }
+
+    // "11/19" or "11-19" numeric date
+    const numericDateMatch = /\b(\d{1,2}[\/\-]\d{1,2})\b/.exec(reason);
+    if (numericDateMatch) {
+      return { label: `⏱ Due ${numericDateMatch[1]}`, whyText, nextStep };
+    }
+
+    // "this week"
+    if (/\bthis week\b/i.test(reason)) {
+      return { label: "⏱ Due this week", whyText, nextStep };
+    }
+
+    // Generic deadline
+    return { label: "⏱ Time-sensitive", whyText, nextStep };
+  }
+
+  // ── 3. Payment / invoice ─────────────────────
+  if (/\b(payment|invoice|overdue|billing|charge|subscription)\b/i.test(reasonLC)) {
+    return { label: "$ Payment due", whyText, nextStep };
+  }
+
+  // ── 4. Reply / respond ───────────────────────
+  if (/\b(reply|respond|response|waiting for you|follow.?up)\b/i.test(reasonLC)) {
+    return { label: "↩ Needs reply", whyText, nextStep };
+  }
+
+  // ── 5. Submit / approve / confirm / enroll ───
+  if (/\b(submit|submission|confirm|approval|approve|sign|complete|enroll|update your)\b/i.test(reasonLC)) {
+    return { label: "✓ Needs action", whyText, nextStep };
+  }
+
+  // ── 6. Coverage / access loss ────────────────
+  if (/\b(lose (coverage|access)|lose your|coverage|miss (the|your|this))\b/i.test(reasonLC)) {
+    return { label: "⚠ Action required", whyText, nextStep };
+  }
+
+  // ── 7. High urgency score ────────────────────
+  if (score >= 0.85) {
+    return { label: "⚠ Time sensitive", whyText, nextStep };
+  }
+
+  // ── 8. Fallback ──────────────────────────────
+  return { label: "↗ Needs attention", whyText, nextStep };
+}
+
+/* ─────────────────────────────────────────────
    Dashboard — LUMA home
 
    Layout
@@ -409,6 +548,7 @@ export default function DashboardPage() {
   return (
     <AppShell
       clearDone={clearDone}
+      onLogoClick={emailSource === "dataset" ? () => setGate("welcome") : undefined}
       emailPane={
         activeTask
           ? (
@@ -454,7 +594,7 @@ export default function DashboardPage() {
         style={{ background: "rgba(255,255,255,0.45)" }}
       >
         <h1
-          className="text-[var(--text-3xl)] font-bold tracking-[var(--tracking-tight)]"
+          className="text-[var(--text-xl)] sm:text-[var(--text-3xl)] font-bold tracking-[var(--tracking-tight)]"
           style={{ color: "var(--luma-text-primary)" }}
         >
           Good morning, {GREETING_NAME}! ☀️
@@ -578,6 +718,7 @@ export default function DashboardPage() {
                   task={task}
                   isSelected={selected?.id === task.id}
                   onSelect={setSelected}
+                  focusReason={deriveFocusReason(task)}
                 />
               </div>
             ))
@@ -622,7 +763,7 @@ export default function DashboardPage() {
       ))}
 
       {/* ── Summary tiles ────────────────────────── */}
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
         <SummaryCard
           icon={<ListChecks size={18} strokeWidth={1.75} />}
           label="Up Next"

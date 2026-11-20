@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useRef, useEffect, useCallback } from "react";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { Task, TaskPriority } from "@/types/dashboard";
@@ -53,22 +54,211 @@ const AVATAR_COLOR: Record<Task["avatarColor"], string> = {
   orange: "#ea580c",
 };
 
+/* ─────────────────────────────────────────────
+   ReasonLabel
+   Shows a short human-readable reason (always
+   visible) with a "Why LUMA?" tooltip that
+   appears on hover, focus, or tap.
+
+   The popover is dismissed on:
+   - Mouse leave (after a short delay so the
+     user can read it)
+   - Blur (keyboard)
+   - Second click/tap (toggle)
+   - Escape key
+   ───────────────────────────────────────────── */
+
+interface ReasonLabelProps {
+  /** Short label always shown, e.g. "↩ Needs reply" */
+  label: string;
+  /** Why LUMA? explanation text (1–2 sentences max) */
+  whyText: string;
+  /** Optional suggested next step from the agent */
+  nextStep?: string | null;
+}
+
+function ReasonLabel({ label, whyText, nextStep }: ReasonLabelProps) {
+  const [open, setOpen]       = useState(false);
+  const hideTimer             = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const triggerRef            = useRef<HTMLSpanElement>(null);
+  const popoverRef            = useRef<HTMLDivElement>(null);
+
+  const show = useCallback(() => {
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    setOpen(true);
+  }, []);
+
+  const hide = useCallback((delay = 0) => {
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    if (delay > 0) {
+      hideTimer.current = setTimeout(() => setOpen(false), delay);
+    } else {
+      setOpen(false);
+    }
+  }, []);
+
+  /* Escape key closes popover */
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        hide();
+        triggerRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [open, hide]);
+
+  /* Click outside closes popover */
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (
+        !triggerRef.current?.contains(e.target as Node) &&
+        !popoverRef.current?.contains(e.target as Node)
+      ) {
+        hide();
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open, hide]);
+
+  return (
+    <span className="relative inline-flex items-center">
+      {/* Always-visible reason label — acts as the popover trigger.
+          Must be a <span role="button"> not a <button> because this
+          element lives inside the EmailRow <button> and nested buttons
+          are invalid HTML and cause a React hydration error. */}
+      <span
+        ref={triggerRef}
+        role="button"
+        tabIndex={0}
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        onClick={(e) => {
+          e.stopPropagation(); // don't fire the row's onSelect
+          setOpen((prev) => !prev);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            e.stopPropagation();
+            setOpen((prev) => !prev);
+          }
+        }}
+        onMouseEnter={show}
+        onMouseLeave={() => hide(300)}
+        onFocus={show}
+        onBlur={(e) => {
+          // only hide if focus left the entire reason widget
+          if (!popoverRef.current?.contains(e.relatedTarget as Node)) {
+            hide(150);
+          }
+        }}
+        className={cn(
+          "text-[var(--text-xs)] font-medium leading-none",
+          "focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--luma-blue)]",
+          "focus-visible:outline-offset-2 rounded-[2px]",
+          "transition-opacity duration-100",
+          open ? "opacity-100" : "opacity-70 hover:opacity-90",
+        )}
+        style={{ color: "var(--luma-text-secondary)", cursor: "default" }}
+      >
+        {label}
+      </span>
+
+      {/* "Why LUMA?" popover */}
+      {open && (
+        <div
+          ref={popoverRef}
+          role="dialog"
+          aria-label="Why LUMA prioritized this"
+          onMouseEnter={show}
+          onMouseLeave={() => hide(200)}
+          className="absolute z-50 bottom-[calc(100%+6px)] left-0"
+          style={{ minWidth: "220px", maxWidth: "280px" }}
+          /* Prevent click-on-popover from firing row's onSelect */
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div
+            className="rounded-[var(--radius-md)] px-3.5 py-3 text-left"
+            style={{
+              background:   "var(--luma-glass-raised)",
+              border:       "1px solid var(--luma-glass-border)",
+              boxShadow:    "var(--shadow-glass-md)",
+              backdropFilter: "blur(20px) saturate(1.5)",
+              WebkitBackdropFilter: "blur(20px) saturate(1.5)",
+            }}
+          >
+            <p
+              className="text-[var(--text-xs)] font-semibold mb-1"
+              style={{ color: "var(--luma-text-secondary)" }}
+            >
+              Why LUMA prioritized this
+            </p>
+            <p
+              className="text-[var(--text-xs)] leading-snug"
+              style={{ color: "var(--luma-text-primary)" }}
+            >
+              {whyText}
+            </p>
+            {nextStep && (
+              <>
+                <p
+                  className="text-[var(--text-xs)] font-semibold mt-2 mb-0.5"
+                  style={{ color: "var(--luma-text-secondary)" }}
+                >
+                  Suggested next step
+                </p>
+                <p
+                  className="text-[var(--text-xs)] leading-snug"
+                  style={{ color: "var(--luma-text-primary)" }}
+                >
+                  {nextStep}
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </span>
+  );
+}
+
 export interface EmailRowProps {
   task:              Task;
   isSelected:        boolean;
   onSelect:          (task: Task) => void;
   /** When true, the priority badge (Action/Urgent/Later/News) is hidden. */
   hidePriorityBadge?: boolean;
+  /**
+   * When provided (Focus Now only), replaces the Urgent/Action pill with a
+   * short human-readable reason label + "Why LUMA?" tooltip.
+   * The agent's urgency/priority data is still used internally for sorting.
+   */
+  focusReason?: {
+    label:    string;
+    whyText:  string;
+    nextStep: string | null;
+  };
 }
 
-export function EmailRow({ task, isSelected, onSelect, hidePriorityBadge }: EmailRowProps) {
+export function EmailRow({ task, isSelected, onSelect, hidePriorityBadge, focusReason }: EmailRowProps) {
   const tag = getPillConfig(task.priority, task.urgencyScore);
+
+  /* When focusReason is provided, the aria-label describes the reason
+     instead of the internal AI classification label. */
+  const rowAriaLabel = focusReason
+    ? `${focusReason.label}: ${task.subject} from ${task.sender}`
+    : `${tag.label}: ${task.subject} from ${task.sender}`;
 
   return (
     <button
       type="button"
       onClick={() => onSelect(task)}
-      aria-label={`${tag.label}: ${task.subject} from ${task.sender}`}
+      aria-label={rowAriaLabel}
       aria-pressed={isSelected}
       className={cn(
         "w-full flex items-center gap-4 px-5 py-4 text-left transition-colors duration-100",
@@ -102,14 +292,14 @@ export function EmailRow({ task, isSelected, onSelect, hidePriorityBadge }: Emai
             {task.sender}
           </span>
           <div className="flex items-center gap-2 shrink-0">
-            {!hidePriorityBadge && (
+            {focusReason ? null : (!hidePriorityBadge && (
               <span
                 className="px-2.5 py-0.5 rounded-[var(--radius-full)] text-[var(--text-xs)] font-semibold"
                 style={{ background: tag.bg, color: tag.color }}
               >
                 {tag.label}
               </span>
-            )}
+            ))}
             <span
               className="text-[var(--text-xs)] tabular-nums"
               style={{ color: "var(--luma-text-tertiary)" }}
@@ -120,18 +310,26 @@ export function EmailRow({ task, isSelected, onSelect, hidePriorityBadge }: Emai
         </div>
 
         <span
-          className="text-[var(--text-sm)] font-medium truncate"
+          className="text-[var(--text-xs)] font-medium truncate"
           style={{ color: "var(--luma-text-primary)" }}
         >
           {task.subject}
         </span>
 
-        <span
-          className="text-[var(--text-xs)] truncate"
-          style={{ color: "var(--luma-text-tertiary)" }}
-        >
-          {task.preview}
-        </span>
+        {focusReason ? (
+          <ReasonLabel
+            label={focusReason.label}
+            whyText={focusReason.whyText}
+            nextStep={focusReason.nextStep}
+          />
+        ) : (
+          <span
+            className="text-[var(--text-xs)] truncate"
+            style={{ color: "var(--luma-text-tertiary)" }}
+          >
+            {task.preview}
+          </span>
+        )}
       </div>
 
       {/* Chevron */}

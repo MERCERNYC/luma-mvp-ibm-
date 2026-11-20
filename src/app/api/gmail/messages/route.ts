@@ -142,8 +142,33 @@ export async function GET(request: NextRequest) {
     );
 
     // 3. Normalize to ClassifyInput[] + extract receivedAt timestamps
-    const emails      = messageResponses.map(gmailMessageToClassifyInput);
-    const receivedAts = messageResponses.map((m) => Number(m.internalDate) || Date.now());
+    const allEmails      = messageResponses.map(gmailMessageToClassifyInput);
+    const allReceivedAts = messageResponses.map((m) => Number(m.internalDate) || Date.now());
+
+    // 4. Deduplicate: keep the most recent message per (subject, senderEmail) pair.
+    //    Forwarded copies of the same email land in the inbox as separate messages
+    //    with the same subject (possibly prefixed "Fwd:") and body. Without this,
+    //    Focus Now can show the same urgent item twice.
+    const seen  = new Map<string, number>(); // key → index of best (most-recent) message
+    for (let i = 0; i < allEmails.length; i++) {
+      const e   = allEmails[i];
+      // Normalise subject: strip common forward/reply prefixes, lowercase, collapse spaces
+      const normSubject = e.subject
+        .replace(/^(fwd?:\s*|re:\s*|fw:\s*)+/gi, "")
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+      const key = `${e.senderEmail.toLowerCase()}||${normSubject}`;
+      const existing = seen.get(key);
+      if (existing === undefined || allReceivedAts[i] > allReceivedAts[existing]) {
+        seen.set(key, i);
+      }
+    }
+
+    // Preserve original inbox order (most-recent first) among surviving messages
+    const keepIndices = new Set(seen.values());
+    const emails      = allEmails.filter((_, i) => keepIndices.has(i));
+    const receivedAts = allReceivedAts.filter((_, i) => keepIndices.has(i));
 
     return NextResponse.json({ emails, receivedAts });
   } catch (err) {

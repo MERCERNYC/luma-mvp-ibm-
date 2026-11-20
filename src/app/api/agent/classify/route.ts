@@ -52,9 +52,23 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const results = await Promise.all(
-      body.emails.map((email) => agentService.classifyEmail(email)),
-    );
+    // ── Concurrency-limited classification ───────────────────────
+    // Promise.all over 50 emails fires 50 simultaneous Orchestrate
+    // SSE connections, which triggers rate-limiting and makes the
+    // slowest call gate the entire batch.
+    // Running CONCURRENCY emails at a time keeps throughput high
+    // while staying well within Orchestrate's per-instance limits.
+    const CONCURRENCY = 6;
+    const results: Awaited<ReturnType<typeof agentService.classifyEmail>>[] = [];
+
+    for (let i = 0; i < body.emails.length; i += CONCURRENCY) {
+      const chunk = body.emails.slice(i, i + CONCURRENCY);
+      const chunkResults = await Promise.all(
+        chunk.map((email) => agentService.classifyEmail(email)),
+      );
+      results.push(...chunkResults);
+    }
+
     return NextResponse.json({ results });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unexpected error.";
